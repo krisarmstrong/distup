@@ -1,0 +1,47 @@
+.TH UPGRADE-ARCH 1 "December 2025" "distup 1.2.0" "User Commands"
+.SH NAME
+upgrade-arch \- upgrade Arch Linux rolling release
+.SH SYNOPSIS
+.B upgrade-arch
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B upgrade-arch
+performs system upgrades on Arch Linux. Supports standard upgrades,
+keyring refresh, and cache cleanup operations.
+.SH OPTIONS
+.TP
+.B \-\-dry\-run
+Show what would be done without making any changes.
+.TP
+.B \-\-version\fR, \fB\-V
+Show version information.
+.TP
+.B \-\-help\fR, \fB\-h
+Show help message.
+.SH INTERACTIVE MENU
+.TP
+.B 1) Standard upgrade
+Sync databases and upgrade all packages.
+.TP
+.B 2) Refresh + Upgrade
+Refresh keyring, sync databases, and upgrade.
+.TP
+.B 3) Upgrade + Clean
+Upgrade packages and clean package cache.
+.TP
+.B 4) Full maintenance
+Refresh keyring, upgrade, and clean cache.
+.SH FILES
+.TP
+.I /var/log/upgrade-arch-*.log
+Log file containing detailed upgrade output.
+.TP
+.I /etc/pacman.conf
+Pacman configuration (backed up before operations).
+.SH AUTHOR
+Written by Kris Armstrong.
+.SH SEE ALSO
+.BR distup (1),
+.BR pacman (8)
+.SH COPYRIGHT
+Copyright \(co 2025 Kris Armstrong. License: MIT.

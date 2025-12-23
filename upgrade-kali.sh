@@ -5,7 +5,7 @@
 # Author:         Kris Armstrong
 # Created:        2025-12-23
 # Last Modified:  2025-12-23
-# Version:        1.1.0
+# Version:        1.2.0
 # License:        MIT
 #
 # Usage:          sudo ./upgrade-kali.sh [OPTIONS] [rolling|bleeding-edge]
@@ -46,6 +46,24 @@ LOG_FILE="/var/log/upgrade-kali-$(date +%Y%m%d-%H%M%S).log"
 
 # Dry run mode
 DRY_RUN=false
+
+# Skip pre-upgrade checks
+SKIP_CHECKS=false
+
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/checks.sh" ]]; then
+    # shellcheck source=lib/checks.sh
+    source "$SCRIPT_DIR/lib/checks.sh"
+fi
+if [[ -f "$SCRIPT_DIR/lib/snapshot.sh" ]]; then
+    # shellcheck source=lib/snapshot.sh
+    source "$SCRIPT_DIR/lib/snapshot.sh"
+fi
+if [[ -f "$SCRIPT_DIR/lib/hooks.sh" ]]; then
+    # shellcheck source=lib/hooks.sh
+    source "$SCRIPT_DIR/lib/hooks.sh"
+fi
 
 # Kali mirror
 KALI_MIRROR="http://http.kali.org/kali"
@@ -121,7 +139,7 @@ show_system_info() {
 show_menu() {
     echo ""
     echo "=========================================="
-    echo "    Kali Linux Upgrade Script v1.1.0"
+    echo "    Kali Linux Upgrade Script v1.2.0"
     echo "=========================================="
     echo ""
     echo "Select upgrade path:"
@@ -317,8 +335,12 @@ main() {
                 DRY_RUN=true
                 shift
                 ;;
+            --skip-checks)
+                SKIP_CHECKS=true
+                shift
+                ;;
             --version | -V)
-                echo "upgrade-kali.sh version 1.1.0"
+                echo "upgrade-kali.sh version 1.2.0"
                 exit 0
                 ;;
             --help | -h)
@@ -326,6 +348,7 @@ main() {
                 echo ""
                 echo "Options:"
                 echo "  --dry-run       Show what would be done without making changes"
+                echo "  --skip-checks   Skip pre-upgrade system checks"
                 echo "  --version       Show version information"
                 echo "  --help          Show this help message"
                 echo ""
@@ -352,6 +375,15 @@ main() {
     # Pre-flight checks
     check_root
     check_kali
+
+    # Run pre-upgrade system checks
+    if [[ "$SKIP_CHECKS" != true && "$DRY_RUN" != true ]]; then
+        if type run_pre_upgrade_checks &>/dev/null; then
+            if ! run_pre_upgrade_checks; then
+                exit 1
+            fi
+        fi
+    fi
 
     # Initialize log
     log "=== Kali Linux Upgrade Script Started ==="

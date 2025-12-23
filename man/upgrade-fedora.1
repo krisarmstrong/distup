@@ -1,0 +1,40 @@
+.TH UPGRADE-FEDORA 1 "December 2025" "distup 1.2.0" "User Commands"
+.SH NAME
+upgrade-fedora \- upgrade Fedora to latest stable or Rawhide
+.SH SYNOPSIS
+.B upgrade-fedora
+[\fIOPTIONS\fR] [\fBstable\fR|\fBrawhide\fR]
+.SH DESCRIPTION
+.B upgrade-fedora
+upgrades Fedora systems to the latest stable release or Rawhide (rolling
+development branch) using dnf system-upgrade.
+.SH OPTIONS
+.TP
+.B \-\-dry\-run
+Show what would be done without making any changes.
+.TP
+.B \-\-version\fR, \fB\-V
+Show version information.
+.TP
+.B \-\-help\fR, \fB\-h
+Show help message.
+.SH MODES
+.TP
+.B stable
+Upgrade to latest stable Fedora release.
+.TP
+.B rawhide
+Switch to Rawhide rolling development branch.
+.SH FILES
+.TP
+.I /var/log/upgrade-fedora-*.log
+Log file containing detailed upgrade output.
+.SH NOTES
+System will reboot during upgrade to apply changes.
+.SH AUTHOR
+Written by Kris Armstrong.
+.SH SEE ALSO
+.BR distup (1),
+.BR dnf (8)
+.SH COPYRIGHT
+Copyright \(co 2025 Kris Armstrong. License: MIT.

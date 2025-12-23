@@ -5,7 +5,7 @@
 # Author:         Kris Armstrong
 # Created:        2025-12-23
 # Last Modified:  2025-12-23
-# Version:        1.1.0
+# Version:        1.2.0
 # License:        MIT
 #
 # Usage:          sudo ./upgrade-fedora.sh [OPTIONS] [stable|rawhide]
@@ -48,6 +48,24 @@ LOG_FILE="/var/log/upgrade-fedora-$(date +%Y%m%d-%H%M%S).log"
 
 # Dry run mode
 DRY_RUN=false
+
+# Skip pre-upgrade checks
+SKIP_CHECKS=false
+
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/checks.sh" ]]; then
+    # shellcheck source=lib/checks.sh
+    source "$SCRIPT_DIR/lib/checks.sh"
+fi
+if [[ -f "$SCRIPT_DIR/lib/snapshot.sh" ]]; then
+    # shellcheck source=lib/snapshot.sh
+    source "$SCRIPT_DIR/lib/snapshot.sh"
+fi
+if [[ -f "$SCRIPT_DIR/lib/hooks.sh" ]]; then
+    # shellcheck source=lib/hooks.sh
+    source "$SCRIPT_DIR/lib/hooks.sh"
+fi
 
 # URL to check for latest Fedora release
 FEDORA_RELEASES_URL="https://dl.fedoraproject.org/pub/fedora/linux/releases/"
@@ -113,7 +131,7 @@ get_current_version() {
 # Get latest stable Fedora version from mirror
 get_latest_version() {
     curl -s "$FEDORA_RELEASES_URL" |
-        grep -oP 'href="\K[0-9]+(?=/")' |
+        sed -n 's/.*href="\([0-9]*\)\/.*/\1/p' |
         sort -n |
         tail -1
 }
@@ -131,7 +149,7 @@ show_system_info() {
 show_menu() {
     echo ""
     echo "=========================================="
-    echo "    Fedora Upgrade Script v1.1.0"
+    echo "    Fedora Upgrade Script v1.2.0"
     echo "=========================================="
     echo ""
     echo "Select upgrade path:"
@@ -281,17 +299,22 @@ main() {
                 DRY_RUN=true
                 shift
                 ;;
+            --skip-checks)
+                SKIP_CHECKS=true
+                shift
+                ;;
             --version | -V)
-                echo "upgrade-fedora.sh version 1.1.0"
+                echo "upgrade-fedora.sh version 1.2.0"
                 exit 0
                 ;;
             --help | -h)
                 echo "Usage: sudo $0 [OPTIONS] [stable|rawhide]"
                 echo ""
                 echo "Options:"
-                echo "  --dry-run    Show what would be done without making changes"
-                echo "  --version    Show version information"
-                echo "  --help       Show this help message"
+                echo "  --dry-run      Show what would be done without making changes"
+                echo "  --skip-checks  Skip pre-upgrade system checks"
+                echo "  --version      Show version information"
+                echo "  --help         Show this help message"
                 echo ""
                 echo "Modes:"
                 echo "  stable       Upgrade to latest stable release"
@@ -313,6 +336,15 @@ main() {
     # Pre-flight checks
     check_root
     check_fedora
+
+    # Run pre-upgrade system checks
+    if [[ "$SKIP_CHECKS" != true && "$DRY_RUN" != true ]]; then
+        if type run_pre_upgrade_checks &>/dev/null; then
+            if ! run_pre_upgrade_checks; then
+                exit 1
+            fi
+        fi
+    fi
 
     # Initialize log
     log "=== Fedora Upgrade Script Started ==="

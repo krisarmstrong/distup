@@ -1,0 +1,51 @@
+# =============================================================================
+# Scheduled Release for v1.2.0
+# One-time workflow to create release tag at scheduled time
+# Delete this file after the release is complete
+# =============================================================================
+
+name: Scheduled Release v1.2.0
+
+on:
+  schedule:
+    # 8:30am Eastern Time = 13:30 UTC (EST is UTC-5)
+    - cron: '30 13 24 12 *'  # December 24, 2024 at 13:30 UTC
+  workflow_dispatch:  # Allow manual trigger for testing
+
+permissions:
+  contents: write
+
+jobs:
+  create-release-tag:
+    name: Create v1.2.0 Release Tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          if git rev-parse v1.2.0 >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag v1.2.0 already exists, skipping"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag v1.2.0 does not exist, will create"
+          fi
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a v1.2.0 -m "Release v1.2.0 - Pre-upgrade checks, snapshots, and hooks"
+          git push origin v1.2.0
+
+      - name: Confirm
+        run: |
+          echo "Tag v1.2.0 created and pushed!"
+          echo "The release workflow will now be triggered automatically."

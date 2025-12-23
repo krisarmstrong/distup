@@ -1,0 +1,90 @@
+.TH DISTUP 1 "December 2025" "distup 1.2.0" "User Commands"
+.SH NAME
+distup \- safely upgrade any Linux distribution
+.SH SYNOPSIS
+.B distup
+[\fIOPTIONS\fR] [\fIARGS\fR...]
+.SH DESCRIPTION
+.B distup
+automatically detects your Linux distribution and runs the appropriate
+upgrade script with any provided arguments. It provides a unified interface
+for upgrading Ubuntu, Debian, Fedora, Arch, Alpine, openSUSE, Kali, Rocky
+Linux, and AlmaLinux systems.
+.SH OPTIONS
+.TP
+.B \-\-list
+List all supported distributions and their upgrade scripts.
+.TP
+.B \-\-detect
+Show detected distribution without running upgrade.
+.TP
+.B \-\-dry\-run
+Pass dry-run mode to upgrade script. Shows what would be done without
+making any changes.
+.TP
+.B \-\-version
+Show version information.
+.TP
+.BR \-\-help ", " \-h
+Show help message.
+.SH ARGUMENTS
+Any additional arguments are passed directly to the distribution-specific
+upgrade script. See the individual script documentation for available options.
+.SH EXAMPLES
+.TP
+.B sudo distup
+Auto-detect distribution and show interactive menu.
+.TP
+.B sudo distup \-\-dry\-run
+Simulate upgrade with auto-detection.
+.TP
+.B sudo distup lts
+Ubuntu: upgrade to latest LTS release.
+.TP
+.B sudo distup \-\-dry\-run stable
+Dry run upgrade to stable release.
+.SH SUPPORTED DISTRIBUTIONS
+.TS
+l l l.
+Distribution	Script	Upgrade Paths
+_
+Ubuntu	upgrade-ubuntu.sh	lts, release
+Debian	upgrade-debian.sh	stable, testing, sid
+Fedora	upgrade-fedora.sh	stable, rawhide
+Arch Linux	upgrade-arch.sh	rolling
+Alpine Linux	upgrade-alpine.sh	stable, edge
+openSUSE	upgrade-opensuse.sh	leap, tumbleweed
+Kali Linux	upgrade-kali.sh	rolling, bleeding-edge
+Rocky Linux	upgrade-rhel-clone.sh	--check, --upgrade
+AlmaLinux	upgrade-rhel-clone.sh	--check, --upgrade
+.TE
+.SH FILES
+.TP
+.I /var/log/upgrade-*.log
+Log files created by upgrade scripts.
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+Error (unsupported distribution, missing script, etc.).
+.SH SECURITY
+All scripts require root privileges. Repository configurations are backed
+up before modification. Use \fB\-\-dry\-run\fR to preview changes before
+applying them.
+.SH AUTHOR
+Written by Kris Armstrong.
+.SH REPORTING BUGS
+Report bugs at: https://github.com/krisarmstrong/distup/issues
+.SH SEE ALSO
+.BR upgrade-ubuntu (1),
+.BR upgrade-debian (1),
+.BR upgrade-fedora (1),
+.BR upgrade-arch (1),
+.BR upgrade-alpine (1),
+.BR upgrade-opensuse (1),
+.BR upgrade-kali (1),
+.BR upgrade-rhel-clone (1)
+.SH COPYRIGHT
+Copyright \(co 2025 Kris Armstrong. License: MIT.

@@ -1,0 +1,41 @@
+.TH UPGRADE-OPENSUSE 1 "December 2025" "distup 1.2.0" "User Commands"
+.SH NAME
+upgrade-opensuse \- upgrade openSUSE Leap or switch to Tumbleweed
+.SH SYNOPSIS
+.B upgrade-opensuse
+[\fIOPTIONS\fR] [\fBleap\fR|\fBtumbleweed\fR]
+.SH DESCRIPTION
+.B upgrade-opensuse
+upgrades openSUSE Leap to the latest version or switches to Tumbleweed
+rolling release.
+.SH OPTIONS
+.TP
+.B \-\-dry\-run
+Show what would be done without making any changes.
+.TP
+.B \-\-version\fR, \fB\-V
+Show version information.
+.TP
+.B \-\-help\fR, \fB\-h
+Show help message.
+.SH MODES
+.TP
+.B leap
+Upgrade to latest openSUSE Leap release.
+.TP
+.B tumbleweed
+Switch to Tumbleweed rolling release.
+.SH FILES
+.TP
+.I /etc/zypp/repos.d/
+Repository configuration (backed up before modification).
+.TP
+.I /var/log/upgrade-opensuse-*.log
+Log file containing detailed upgrade output.
+.SH AUTHOR
+Written by Kris Armstrong.
+.SH SEE ALSO
+.BR distup (1),
+.BR zypper (8)
+.SH COPYRIGHT
+Copyright \(co 2025 Kris Armstrong. License: MIT.

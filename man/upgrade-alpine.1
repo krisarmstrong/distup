@@ -1,0 +1,41 @@
+.TH UPGRADE-ALPINE 1 "December 2025" "distup 1.2.0" "User Commands"
+.SH NAME
+upgrade-alpine \- upgrade Alpine Linux to stable or edge
+.SH SYNOPSIS
+.B upgrade-alpine
+[\fIOPTIONS\fR] [\fBstable\fR|\fBedge\fR]
+.SH DESCRIPTION
+.B upgrade-alpine
+upgrades Alpine Linux systems to the latest stable release or Edge
+(rolling release) branch.
+.SH OPTIONS
+.TP
+.B \-\-dry\-run
+Show what would be done without making any changes.
+.TP
+.B \-\-version\fR, \fB\-V
+Show version information.
+.TP
+.B \-\-help\fR, \fB\-h
+Show help message.
+.SH MODES
+.TP
+.B stable
+Upgrade to latest stable Alpine release.
+.TP
+.B edge
+Switch to Edge rolling release branch.
+.SH FILES
+.TP
+.I /etc/apk/repositories
+Repository configuration (backed up before modification).
+.TP
+.I /var/log/upgrade-alpine-*.log
+Log file containing detailed upgrade output.
+.SH AUTHOR
+Written by Kris Armstrong.
+.SH SEE ALSO
+.BR distup (1),
+.BR apk (8)
+.SH COPYRIGHT
+Copyright \(co 2025 Kris Armstrong. License: MIT.
