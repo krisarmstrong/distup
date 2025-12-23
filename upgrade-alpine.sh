@@ -5,13 +5,14 @@
 # Author:         Kris Armstrong
 # Created:        2025-12-23
 # Last Modified:  2025-12-23
-# Version:        1.0.0
+# Version:        1.1.0
 # License:        MIT
 #
-# Usage:          sudo ./upgrade-alpine.sh [stable|edge]
+# Usage:          sudo ./upgrade-alpine.sh [OPTIONS] [stable|edge]
 #                 sudo ./upgrade-alpine.sh              # Interactive menu
 #                 sudo ./upgrade-alpine.sh stable       # Upgrade to latest stable
 #                 sudo ./upgrade-alpine.sh edge         # Upgrade to Edge
+#                 sudo ./upgrade-alpine.sh --dry-run    # Show what would be done
 #
 # Requirements:   - Alpine Linux 3.15 or later
 #                 - Root/sudo privileges
@@ -29,7 +30,7 @@
 #                 - Back up important data before upgrading
 # =============================================================================
 
-set -e  # Exit immediately if a command exits with non-zero status
+set -e # Exit immediately if a command exits with non-zero status
 
 # -----------------------------------------------------------------------------
 # CONFIGURATION
@@ -44,6 +45,9 @@ NC='\033[0m' # No Color
 
 # Logging
 LOG_FILE="/var/log/upgrade-alpine-$(date +%Y%m%d-%H%M%S).log"
+
+# Dry run mode
+DRY_RUN=false
 
 # Alpine mirror base URL
 ALPINE_MIRROR="https://dl-cdn.alpinelinux.org/alpine"
@@ -72,6 +76,16 @@ print_error() {
 # Log message to file and stdout
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+# Execute command or show in dry-run mode
+run_cmd() {
+    if [[ "$DRY_RUN" == true ]]; then
+        echo -e "${YELLOW}[DRY-RUN]${NC} Would execute: $*"
+        log "[DRY-RUN] Would execute: $*"
+    else
+        "$@"
+    fi
 }
 
 # Check if running as root
@@ -103,9 +117,10 @@ get_arch() {
 
 # Get latest stable Alpine version
 get_latest_version() {
-    local arch=$(get_arch)
-    wget -qO- "${ALPINE_MIRROR}/latest-stable/releases/${arch}/latest-releases.yaml" | \
-        grep -oP 'version: \K[0-9]+\.[0-9]+' | \
+    local arch
+    arch=$(get_arch)
+    wget -qO- "${ALPINE_MIRROR}/latest-stable/releases/${arch}/latest-releases.yaml" |
+        grep -oP 'version: \K[0-9]+\.[0-9]+' |
         head -1
 }
 
@@ -122,7 +137,7 @@ show_system_info() {
 show_menu() {
     echo ""
     echo "=========================================="
-    echo "    Alpine Upgrade Script v1.0.0"
+    echo "    Alpine Upgrade Script v1.1.0"
     echo "=========================================="
     echo ""
     echo "Select upgrade path:"
@@ -135,13 +150,19 @@ show_menu() {
     echo ""
     echo "  q) Quit"
     echo ""
-    read -p "Enter choice [1/2/q]: " choice
-    
+    read -rp "Enter choice [1/2/q]: " choice
+
     case $choice in
         1) MODE="stable" ;;
         2) MODE="edge" ;;
-        q|Q) echo "Exiting."; exit 0 ;;
-        *) print_error "Invalid choice"; exit 1 ;;
+        q | Q)
+            echo "Exiting."
+            exit 0
+            ;;
+        *)
+            print_error "Invalid choice"
+            exit 1
+            ;;
     esac
 }
 
@@ -149,24 +170,34 @@ show_menu() {
 backup_repositories() {
     print_status "Backing up current repositories..."
     log "Backing up /etc/apk/repositories"
-    
-    cp /etc/apk/repositories /etc/apk/repositories.bak
-    
+
+    if [[ "$DRY_RUN" == true ]]; then
+        run_cmd cp /etc/apk/repositories /etc/apk/repositories.bak
+    else
+        cp /etc/apk/repositories /etc/apk/repositories.bak
+    fi
+
     print_success "Backup saved to /etc/apk/repositories.bak"
 }
 
 # Update repositories for stable release
 configure_stable_repos() {
     local version=$1
-    
+
     print_status "Configuring repositories for Alpine v$version..."
     log "Setting repositories to v$version"
-    
-    cat > /etc/apk/repositories << EOF
+
+    if [[ "$DRY_RUN" == true ]]; then
+        echo -e "${YELLOW}[DRY-RUN]${NC} Would write to /etc/apk/repositories:"
+        echo "  ${ALPINE_MIRROR}/v${version}/main"
+        echo "  ${ALPINE_MIRROR}/v${version}/community"
+    else
+        cat >/etc/apk/repositories <<EOF
 ${ALPINE_MIRROR}/v${version}/main
 ${ALPINE_MIRROR}/v${version}/community
 EOF
-    
+    fi
+
     print_success "Repositories configured for v$version"
 }
 
@@ -174,13 +205,20 @@ EOF
 configure_edge_repos() {
     print_status "Configuring repositories for Edge..."
     log "Setting repositories to edge"
-    
-    cat > /etc/apk/repositories << EOF
+
+    if [[ "$DRY_RUN" == true ]]; then
+        echo -e "${YELLOW}[DRY-RUN]${NC} Would write to /etc/apk/repositories:"
+        echo "  ${ALPINE_MIRROR}/edge/main"
+        echo "  ${ALPINE_MIRROR}/edge/community"
+        echo "  ${ALPINE_MIRROR}/edge/testing"
+    else
+        cat >/etc/apk/repositories <<EOF
 ${ALPINE_MIRROR}/edge/main
 ${ALPINE_MIRROR}/edge/community
 ${ALPINE_MIRROR}/edge/testing
 EOF
-    
+    fi
+
     print_success "Repositories configured for Edge"
 }
 
@@ -188,9 +226,13 @@ EOF
 update_index() {
     print_status "Updating package index..."
     log "Running apk update"
-    
-    apk update 2>&1 | tee -a "$LOG_FILE"
-    
+
+    if [[ "$DRY_RUN" == true ]]; then
+        run_cmd apk update
+    else
+        apk update 2>&1 | tee -a "$LOG_FILE"
+    fi
+
     print_success "Package index updated"
 }
 
@@ -199,9 +241,13 @@ perform_upgrade() {
     print_status "Upgrading system packages..."
     print_warning "This may take a few minutes."
     log "Running apk upgrade --available"
-    
-    apk upgrade --available 2>&1 | tee -a "$LOG_FILE"
-    
+
+    if [[ "$DRY_RUN" == true ]]; then
+        run_cmd apk upgrade --available
+    else
+        apk upgrade --available 2>&1 | tee -a "$LOG_FILE"
+    fi
+
     print_success "System packages upgraded"
 }
 
@@ -216,9 +262,23 @@ sync_filesystem() {
 show_final_info() {
     echo ""
     echo "=========================================="
-    echo "    Upgrade Complete"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "    Dry Run Complete"
+    else
+        echo "    Upgrade Complete"
+    fi
     echo "=========================================="
     echo ""
+
+    if [[ "$DRY_RUN" == true ]]; then
+        print_success "Dry run completed - no changes were made"
+        echo ""
+        echo "  Log file:     $LOG_FILE"
+        echo ""
+        print_status "Run without --dry-run to perform actual upgrade"
+        return
+    fi
+
     print_success "System has been upgraded"
     echo ""
     echo "  Distribution: Alpine Linux $(cat /etc/alpine-release)"
@@ -229,8 +289,8 @@ show_final_info() {
     echo ""
     print_warning "A system reboot is recommended"
     echo ""
-    read -p "Reboot now? [y/N]: " reboot_choice
-    
+    read -rp "Reboot now? [y/N]: " reboot_choice
+
     if [[ "$reboot_choice" =~ ^[Yy]$ ]]; then
         log "User initiated reboot"
         reboot
@@ -254,87 +314,125 @@ restore_repositories() {
 # -----------------------------------------------------------------------------
 
 main() {
-    # Parse command line argument
-    MODE=${1:-menu}
-    
-    # Validate mode if provided
-    if [[ "$MODE" != "menu" && "$MODE" != "stable" && "$MODE" != "edge" ]]; then
-        print_error "Invalid argument: $MODE"
-        echo "Usage: sudo $0 [stable|edge]"
-        exit 1
-    fi
-    
+    # Parse command line arguments
+    MODE="menu"
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --dry-run)
+                DRY_RUN=true
+                shift
+                ;;
+            --version | -V)
+                echo "upgrade-alpine.sh version 1.1.0"
+                exit 0
+                ;;
+            --help | -h)
+                echo "Usage: sudo $0 [OPTIONS] [stable|edge]"
+                echo ""
+                echo "Options:"
+                echo "  --dry-run    Show what would be done without making changes"
+                echo "  --version    Show version information"
+                echo "  --help       Show this help message"
+                echo ""
+                echo "Modes:"
+                echo "  stable       Upgrade to latest stable release"
+                echo "  edge         Upgrade to Edge (rolling release)"
+                exit 0
+                ;;
+            stable | edge)
+                MODE=$1
+                shift
+                ;;
+            *)
+                print_error "Invalid argument: $1"
+                echo "Usage: sudo $0 [--dry-run] [stable|edge]"
+                exit 1
+                ;;
+        esac
+    done
+
     # Set trap to restore repos on failure
     trap restore_repositories ERR
-    
+
     # Pre-flight checks
     check_root
     check_alpine
-    
+
     # Initialize log
     log "=== Alpine Upgrade Script Started ==="
-    
+    [[ "$DRY_RUN" == true ]] && log "DRY RUN MODE - No changes will be made"
+
+    # Show dry-run banner
+    if [[ "$DRY_RUN" == true ]]; then
+        echo ""
+        echo -e "${YELLOW}=========================================="
+        echo "           DRY RUN MODE"
+        echo "    No changes will be made to system"
+        echo "==========================================${NC}"
+    fi
+
     # Show current system info
     show_system_info
-    
+
     # Show menu if no argument provided
     if [[ "$MODE" == "menu" ]]; then
         show_menu
     fi
-    
+
     log "Selected upgrade mode: $MODE"
-    
+
     # Determine target version
     CURRENT=$(get_current_version)
-    
+
     if [[ "$MODE" == "edge" ]]; then
         TARGET="edge"
         print_warning "Edge is a rolling release and may have occasional instability!"
     else
         TARGET=$(get_latest_version)
-        
+
         # Check if already at latest
         if [[ "$CURRENT" == "$TARGET" ]]; then
             print_success "Already running Alpine $CURRENT (latest stable)"
             exit 0
         fi
     fi
-    
+
     echo ""
     print_status "Upgrade Plan:"
     echo "  Current: Alpine $CURRENT"
     echo "  Target:  Alpine $TARGET"
     echo ""
-    
+
     # Confirm before proceeding
-    read -p "Continue with upgrade? [y/N]: " confirm
-    
+    read -rp "Continue with upgrade? [y/N]: " confirm
+
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         echo "Upgrade cancelled."
         exit 0
     fi
-    
+
     # Execute upgrade steps
     echo ""
     backup_repositories
     echo ""
-    
+
     if [[ "$MODE" == "edge" ]]; then
         configure_edge_repos
     else
         configure_stable_repos "$TARGET"
     fi
-    
+
     echo ""
     update_index
     echo ""
     perform_upgrade
     echo ""
     sync_filesystem
-    
+
     # Show results
     show_final_info
-    
+
     log "=== Alpine Upgrade Script Completed ==="
 }
 

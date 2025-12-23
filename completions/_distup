@@ -1,0 +1,180 @@
+#compdef distup upgrade-ubuntu.sh upgrade-debian.sh upgrade-fedora.sh upgrade-arch.sh upgrade-alpine.sh upgrade-kali.sh upgrade-opensuse.sh upgrade-rhel-clone.sh
+
+# Zsh completion for distup
+# Place in a directory in your $fpath (e.g., ~/.zsh/completions/)
+
+_distup() {
+    local -a opts
+    opts=(
+        '--help[Show help message]'
+        '-h[Show help message]'
+        '--version[Show version information]'
+        '-V[Show version information]'
+        '--dry-run[Preview changes without applying]'
+        '--list[List supported distributions]'
+        '--detect[Show detected distribution]'
+    )
+    _describe 'distup options' opts
+}
+
+_upgrade_ubuntu() {
+    local -a opts modes
+    opts=(
+        '--help[Show help message]'
+        '-h[Show help message]'
+        '--version[Show version information]'
+        '-V[Show version information]'
+        '--dry-run[Preview changes without applying]'
+    )
+    modes=(
+        'lts:Upgrade to latest LTS release'
+        'release:Upgrade to latest release (including interim)'
+    )
+    _describe 'options' opts
+    _describe 'modes' modes
+}
+
+_upgrade_debian() {
+    local -a opts modes
+    opts=(
+        '--help[Show help message]'
+        '-h[Show help message]'
+        '--version[Show version information]'
+        '-V[Show version information]'
+        '--dry-run[Preview changes without applying]'
+    )
+    modes=(
+        'stable:Upgrade to current stable release'
+        'testing:Upgrade to testing branch'
+        'sid:Upgrade to sid/unstable branch'
+    )
+    _describe 'options' opts
+    _describe 'modes' modes
+}
+
+_upgrade_fedora() {
+    local -a opts modes
+    opts=(
+        '--help[Show help message]'
+        '-h[Show help message]'
+        '--version[Show version information]'
+        '-V[Show version information]'
+        '--dry-run[Preview changes without applying]'
+    )
+    modes=(
+        'stable:Upgrade to latest stable release'
+        'rawhide:Upgrade to Rawhide (rolling development)'
+    )
+    _describe 'options' opts
+    _describe 'modes' modes
+}
+
+_upgrade_arch() {
+    local -a opts
+    opts=(
+        '--help[Show help message]'
+        '-h[Show help message]'
+        '--version[Show version information]'
+        '-V[Show version information]'
+        '--dry-run[Preview changes without applying]'
+        '--refresh[Force refresh package databases]'
+        '--clean[Clean package cache after upgrade]'
+    )
+    _describe 'options' opts
+}
+
+_upgrade_alpine() {
+    local -a opts modes
+    opts=(
+        '--help[Show help message]'
+        '-h[Show help message]'
+        '--version[Show version information]'
+        '-V[Show version information]'
+        '--dry-run[Preview changes without applying]'
+    )
+    modes=(
+        'stable:Upgrade to latest stable release'
+        'edge:Upgrade to Edge (rolling release)'
+    )
+    _describe 'options' opts
+    _describe 'modes' modes
+}
+
+_upgrade_kali() {
+    local -a opts modes
+    opts=(
+        '--help[Show help message]'
+        '-h[Show help message]'
+        '--version[Show version information]'
+        '-V[Show version information]'
+        '--dry-run[Preview changes without applying]'
+    )
+    modes=(
+        'rolling:Standard Kali rolling release'
+        'bleeding-edge:Add bleeding-edge repository'
+    )
+    _describe 'options' opts
+    _describe 'modes' modes
+}
+
+_upgrade_opensuse() {
+    local -a opts modes
+    opts=(
+        '--help[Show help message]'
+        '-h[Show help message]'
+        '--version[Show version information]'
+        '-V[Show version information]'
+        '--dry-run[Preview changes without applying]'
+    )
+    modes=(
+        'leap:Upgrade to latest Leap release'
+        'tumbleweed:Switch to Tumbleweed rolling release'
+    )
+    _describe 'options' opts
+    _describe 'modes' modes
+}
+
+_upgrade_rhel_clone() {
+    local -a opts
+    opts=(
+        '--help[Show help message]'
+        '-h[Show help message]'
+        '--version[Show version information]'
+        '-V[Show version information]'
+        '--dry-run[Preview changes without applying]'
+        '--check[Run pre-upgrade check only]'
+        '--upgrade[Perform the actual upgrade]'
+    )
+    _describe 'options' opts
+}
+
+# Dispatcher based on command name
+case "$service" in
+    distup)
+        _distup
+        ;;
+    upgrade-ubuntu.sh)
+        _upgrade_ubuntu
+        ;;
+    upgrade-debian.sh)
+        _upgrade_debian
+        ;;
+    upgrade-fedora.sh)
+        _upgrade_fedora
+        ;;
+    upgrade-arch.sh)
+        _upgrade_arch
+        ;;
+    upgrade-alpine.sh)
+        _upgrade_alpine
+        ;;
+    upgrade-kali.sh)
+        _upgrade_kali
+        ;;
+    upgrade-opensuse.sh)
+        _upgrade_opensuse
+        ;;
+    upgrade-rhel-clone.sh)
+        _upgrade_rhel_clone
+        ;;
+esac

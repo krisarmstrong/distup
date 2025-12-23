@@ -5,13 +5,14 @@
 # Author:         Kris Armstrong
 # Created:        2025-12-23
 # Last Modified:  2025-12-23
-# Version:        1.0.0
+# Version:        1.1.0
 # License:        MIT
 #
-# Usage:          sudo ./upgrade-fedora.sh [stable|rawhide]
+# Usage:          sudo ./upgrade-fedora.sh [OPTIONS] [stable|rawhide]
 #                 sudo ./upgrade-fedora.sh              # Interactive menu
 #                 sudo ./upgrade-fedora.sh stable       # Upgrade to latest stable
 #                 sudo ./upgrade-fedora.sh rawhide      # Upgrade to Rawhide
+#                 sudo ./upgrade-fedora.sh --dry-run    # Show what would be done
 #
 # Requirements:   - Fedora 35 or later
 #                 - Root/sudo privileges
@@ -29,7 +30,7 @@
 #                 - Back up important data before upgrading
 # =============================================================================
 
-set -e  # Exit immediately if a command exits with non-zero status
+set -e # Exit immediately if a command exits with non-zero status
 
 # -----------------------------------------------------------------------------
 # CONFIGURATION
@@ -44,6 +45,9 @@ NC='\033[0m' # No Color
 
 # Logging
 LOG_FILE="/var/log/upgrade-fedora-$(date +%Y%m%d-%H%M%S).log"
+
+# Dry run mode
+DRY_RUN=false
 
 # URL to check for latest Fedora release
 FEDORA_RELEASES_URL="https://dl.fedoraproject.org/pub/fedora/linux/releases/"
@@ -74,6 +78,16 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
+# Execute command or show in dry-run mode
+run_cmd() {
+    if [[ "$DRY_RUN" == true ]]; then
+        echo -e "${YELLOW}[DRY-RUN]${NC} Would execute: $*"
+        log "[DRY-RUN] Would execute: $*"
+    else
+        "$@"
+    fi
+}
+
 # Check if running as root
 check_root() {
     if [[ $EUID -ne 0 ]]; then
@@ -98,9 +112,9 @@ get_current_version() {
 
 # Get latest stable Fedora version from mirror
 get_latest_version() {
-    curl -s "$FEDORA_RELEASES_URL" | \
-        grep -oP 'href="\K[0-9]+(?=/")' | \
-        sort -n | \
+    curl -s "$FEDORA_RELEASES_URL" |
+        grep -oP 'href="\K[0-9]+(?=/")' |
+        sort -n |
         tail -1
 }
 
@@ -117,7 +131,7 @@ show_system_info() {
 show_menu() {
     echo ""
     echo "=========================================="
-    echo "    Fedora Upgrade Script v1.0.0"
+    echo "    Fedora Upgrade Script v1.1.0"
     echo "=========================================="
     echo ""
     echo "Select upgrade path:"
@@ -130,13 +144,19 @@ show_menu() {
     echo ""
     echo "  q) Quit"
     echo ""
-    read -p "Enter choice [1/2/q]: " choice
-    
+    read -rp "Enter choice [1/2/q]: " choice
+
     case $choice in
         1) MODE="stable" ;;
         2) MODE="rawhide" ;;
-        q|Q) echo "Exiting."; exit 0 ;;
-        *) print_error "Invalid choice"; exit 1 ;;
+        q | Q)
+            echo "Exiting."
+            exit 0
+            ;;
+        *)
+            print_error "Invalid choice"
+            exit 1
+            ;;
     esac
 }
 
@@ -144,10 +164,14 @@ show_menu() {
 update_current_system() {
     print_status "Updating current system packages..."
     log "Starting system update"
-    
-    # Refresh metadata and upgrade
-    dnf upgrade --refresh -y 2>&1 | tee -a "$LOG_FILE"
-    
+
+    if [[ "$DRY_RUN" == true ]]; then
+        run_cmd dnf upgrade --refresh -y
+    else
+        # Refresh metadata and upgrade
+        dnf upgrade --refresh -y 2>&1 | tee -a "$LOG_FILE"
+    fi
+
     print_success "System packages updated"
 }
 
@@ -155,23 +179,31 @@ update_current_system() {
 install_upgrade_plugin() {
     print_status "Installing DNF system upgrade plugin..."
     log "Installing dnf-plugin-system-upgrade"
-    
-    dnf install dnf-plugin-system-upgrade -y 2>&1 | tee -a "$LOG_FILE"
-    
+
+    if [[ "$DRY_RUN" == true ]]; then
+        run_cmd dnf install dnf-plugin-system-upgrade -y
+    else
+        dnf install dnf-plugin-system-upgrade -y 2>&1 | tee -a "$LOG_FILE"
+    fi
+
     print_success "Upgrade plugin installed"
 }
 
 # Download upgrade packages
 download_upgrade() {
     local target=$1
-    
+
     print_status "Downloading Fedora $target packages..."
     print_warning "This may take a while depending on your connection."
     log "Downloading packages for Fedora $target"
-    
-    # Download all packages needed for upgrade
-    dnf system-upgrade download --releasever="$target" -y 2>&1 | tee -a "$LOG_FILE"
-    
+
+    if [[ "$DRY_RUN" == true ]]; then
+        run_cmd dnf system-upgrade download --releasever="$target" -y
+    else
+        # Download all packages needed for upgrade
+        dnf system-upgrade download --releasever="$target" -y 2>&1 | tee -a "$LOG_FILE"
+    fi
+
     print_success "Download completed"
 }
 
@@ -179,20 +211,36 @@ download_upgrade() {
 perform_upgrade() {
     echo ""
     echo "=========================================="
-    echo "    Ready to Upgrade"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "    Dry Run Complete"
+    else
+        echo "    Ready to Upgrade"
+    fi
     echo "=========================================="
     echo ""
+
+    if [[ "$DRY_RUN" == true ]]; then
+        print_success "Dry run completed - no changes were made"
+        echo ""
+        run_cmd dnf system-upgrade reboot
+        echo ""
+        echo "  Log file:     $LOG_FILE"
+        echo ""
+        print_status "Run without --dry-run to perform actual upgrade"
+        return
+    fi
+
     print_warning "The system will reboot to complete the upgrade."
     print_warning "This process may take 30-60 minutes."
     print_warning "Do not power off during the upgrade."
     echo ""
-    
-    read -p "Proceed with upgrade and reboot? [y/N]: " confirm
-    
+
+    read -rp "Proceed with upgrade and reboot? [y/N]: " confirm
+
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
         log "User confirmed reboot for upgrade"
         print_status "Starting upgrade process..."
-        
+
         # Trigger the upgrade (system will reboot)
         dnf system-upgrade reboot
     else
@@ -224,63 +272,101 @@ show_final_info() {
 # -----------------------------------------------------------------------------
 
 main() {
-    # Parse command line argument
-    MODE=${1:-menu}
-    
-    # Validate mode if provided
-    if [[ "$MODE" != "menu" && "$MODE" != "stable" && "$MODE" != "rawhide" ]]; then
-        print_error "Invalid argument: $MODE"
-        echo "Usage: sudo $0 [stable|rawhide]"
-        exit 1
-    fi
-    
+    # Parse command line arguments
+    MODE="menu"
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --dry-run)
+                DRY_RUN=true
+                shift
+                ;;
+            --version | -V)
+                echo "upgrade-fedora.sh version 1.1.0"
+                exit 0
+                ;;
+            --help | -h)
+                echo "Usage: sudo $0 [OPTIONS] [stable|rawhide]"
+                echo ""
+                echo "Options:"
+                echo "  --dry-run    Show what would be done without making changes"
+                echo "  --version    Show version information"
+                echo "  --help       Show this help message"
+                echo ""
+                echo "Modes:"
+                echo "  stable       Upgrade to latest stable release"
+                echo "  rawhide      Upgrade to Rawhide (rolling development)"
+                exit 0
+                ;;
+            stable | rawhide)
+                MODE=$1
+                shift
+                ;;
+            *)
+                print_error "Invalid argument: $1"
+                echo "Usage: sudo $0 [--dry-run] [stable|rawhide]"
+                exit 1
+                ;;
+        esac
+    done
+
     # Pre-flight checks
     check_root
     check_fedora
-    
+
     # Initialize log
     log "=== Fedora Upgrade Script Started ==="
-    
+    [[ "$DRY_RUN" == true ]] && log "DRY RUN MODE - No changes will be made"
+
+    # Show dry-run banner
+    if [[ "$DRY_RUN" == true ]]; then
+        echo ""
+        echo -e "${YELLOW}=========================================="
+        echo "           DRY RUN MODE"
+        echo "    No changes will be made to system"
+        echo "==========================================${NC}"
+    fi
+
     # Show current system info
     show_system_info
-    
+
     # Show menu if no argument provided
     if [[ "$MODE" == "menu" ]]; then
         show_menu
     fi
-    
+
     log "Selected upgrade mode: $MODE"
-    
+
     # Determine target version
     CURRENT=$(get_current_version)
-    
+
     if [[ "$MODE" == "rawhide" ]]; then
         TARGET="rawhide"
         print_warning "Rawhide is a development branch and may be unstable!"
     else
         TARGET=$(get_latest_version)
-        
+
         # Check if already at latest
         if [[ "$CURRENT" -ge "$TARGET" ]]; then
             print_success "Already running Fedora $CURRENT (latest stable)"
             exit 0
         fi
     fi
-    
+
     echo ""
     print_status "Upgrade Plan:"
     echo "  Current: Fedora $CURRENT"
     echo "  Target:  Fedora $TARGET"
     echo ""
-    
+
     # Confirm before proceeding
-    read -p "Continue with upgrade? [y/N]: " confirm
-    
+    read -rp "Continue with upgrade? [y/N]: " confirm
+
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         echo "Upgrade cancelled."
         exit 0
     fi
-    
+
     # Execute upgrade steps
     echo ""
     update_current_system
@@ -290,7 +376,7 @@ main() {
     download_upgrade "$TARGET"
     echo ""
     perform_upgrade
-    
+
     log "=== Fedora Upgrade Script Completed ==="
 }
 

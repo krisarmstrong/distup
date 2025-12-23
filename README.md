@@ -22,6 +22,7 @@ distup provides a consistent, safe, and interactive way to upgrade various Linux
 
 | Distribution | Script | Upgrade Paths |
 |-------------|--------|---------------|
+| **Auto-detect** | `distup` | Detects your distro automatically |
 | Ubuntu | `upgrade-ubuntu.sh` | LTS → LTS, Release → Release |
 | Fedora | `upgrade-fedora.sh` | Stable, Rawhide |
 | Debian | `upgrade-debian.sh` | Stable, Testing, Sid |
@@ -41,12 +42,28 @@ git clone https://github.com/krisarmstrong/distup.git
 cd distup
 
 # Make scripts executable
-chmod +x upgrade-*.sh
+chmod +x distup upgrade-*.sh
+
+# Optional: Install system-wide
+sudo make install
 ```
 
 ### Usage
 
-Each script can be run interactively (with menu) or with command-line arguments:
+**Recommended:** Use the main `distup` command which auto-detects your distribution:
+
+```bash
+# Auto-detect distribution and show menu
+sudo ./distup
+
+# Auto-detect with dry-run mode
+sudo ./distup --dry-run
+
+# Pass arguments to detected script
+sudo ./distup lts
+```
+
+Or run distribution-specific scripts directly:
 
 ```bash
 # Interactive mode (shows menu)
@@ -55,7 +72,20 @@ sudo ./upgrade-ubuntu.sh
 # Direct mode (skip menu)
 sudo ./upgrade-ubuntu.sh lts
 sudo ./upgrade-ubuntu.sh release
+
+# Dry-run mode (preview changes without applying)
+sudo ./upgrade-ubuntu.sh --dry-run lts
 ```
+
+### Common Options
+
+All scripts support these options:
+
+| Option | Description |
+|--------|-------------|
+| `--dry-run` | Preview changes without making modifications |
+| `--version` | Show script version |
+| `--help` | Show help message |
 
 ## Script Details
 
@@ -209,6 +239,27 @@ sudo ./upgrade-opensuse.sh [leap|tumbleweed]
 - **Backup creation:** Repository configs are backed up before changes
 - **Error handling:** Automatic rollback on failure (where possible)
 - **Confirmation prompts:** User must confirm before destructive operations
+
+### Dry-Run Mode
+
+All scripts support `--dry-run` to preview what would happen without making changes:
+
+```bash
+# Preview Ubuntu LTS upgrade
+sudo ./upgrade-ubuntu.sh --dry-run lts
+
+# Preview Arch Linux upgrade with cache cleaning
+sudo ./upgrade-arch.sh --dry-run --clean
+
+# Preview using auto-detection
+sudo ./distup --dry-run
+```
+
+In dry-run mode:
+- Commands are displayed but not executed
+- Repository changes are shown but not applied
+- A `[DRY-RUN]` banner indicates safe mode
+- Full logging still occurs for review
 
 ### Logging
 

@@ -1,0 +1,80 @@
+name: Bug Report
+description: Report a bug or issue with distup
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+
+  - type: dropdown
+    id: script
+    attributes:
+      label: Script
+      description: Which upgrade script has the issue?
+      options:
+        - distup (main wrapper)
+        - upgrade-ubuntu.sh
+        - upgrade-debian.sh
+        - upgrade-fedora.sh
+        - upgrade-alpine.sh
+        - upgrade-arch.sh
+        - upgrade-opensuse.sh
+        - upgrade-kali.sh
+        - upgrade-rhel-clone.sh
+    validations:
+      required: true
+
+  - type: input
+    id: distro-version
+    attributes:
+      label: Distribution Version
+      description: What version of the distribution are you running?
+      placeholder: "e.g., Ubuntu 22.04, Fedora 40"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear description of what the bug is
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Run `sudo ./upgrade-ubuntu.sh --dry-run`
+        2. Select option '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log Output
+      description: Relevant log output (check /var/log/upgrade-*.log)
+      render: shell
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I ran the script with `--dry-run` first
+        - label: I have checked existing issues for duplicates
+        - label: I am running the latest version

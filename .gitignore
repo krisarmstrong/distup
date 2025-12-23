@@ -49,3 +49,6 @@ temp/
 .env
 .env.local
 *.local
+
+# Claude Code
+.claude/

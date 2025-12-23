@@ -1,0 +1,285 @@
+#!/bin/bash
+# =============================================================================
+# Script Name:    distup
+# Description:    Main entry point - auto-detects distribution and runs upgrade
+# Author:         Kris Armstrong
+# Created:        2025-12-23
+# Last Modified:  2025-12-23
+# Version:        1.1.0
+# License:        MIT
+#
+# Usage:          sudo distup [OPTIONS] [ARGS...]
+#                 sudo distup                    # Auto-detect and show menu
+#                 sudo distup --list             # List supported distributions
+#                 sudo distup --dry-run          # Dry run mode
+#                 sudo distup lts                # Pass args to detected script
+#
+# Description:    Automatically detects your Linux distribution and runs the
+#                 appropriate upgrade script with any provided arguments.
+# =============================================================================
+
+set -e
+
+# -----------------------------------------------------------------------------
+# CONFIGURATION
+# -----------------------------------------------------------------------------
+
+VERSION="1.1.0"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# -----------------------------------------------------------------------------
+# FUNCTIONS
+# -----------------------------------------------------------------------------
+
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+show_banner() {
+    echo -e "${CYAN}"
+    echo "      _ _     _               "
+    echo "   __| (_)___| |_ _   _ _ __  "
+    echo "  / _\` | / __| __| | | | '_ \ "
+    echo " | (_| | \__ \ |_| |_| | |_) |"
+    echo "  \__,_|_|___/\__|\__,_| .__/ "
+    echo "                       |_|    "
+    echo -e "${NC}"
+    echo "  Safely upgrade any Linux distribution"
+    echo "  Version: $VERSION"
+    echo ""
+}
+
+show_usage() {
+    echo "Usage: sudo distup [OPTIONS] [ARGS...]"
+    echo ""
+    echo "Options:"
+    echo "  --list       List all supported distributions"
+    echo "  --detect     Show detected distribution (don't run upgrade)"
+    echo "  --dry-run    Pass dry-run mode to upgrade script"
+    echo "  --version    Show version information"
+    echo "  --help, -h   Show this help message"
+    echo ""
+    echo "Arguments:"
+    echo "  Any additional arguments are passed to the distribution-specific script."
+    echo ""
+    echo "Examples:"
+    echo "  sudo distup                    # Auto-detect distro, show menu"
+    echo "  sudo distup --dry-run          # Dry run with auto-detection"
+    echo "  sudo distup lts                # Ubuntu: upgrade to LTS"
+    echo "  sudo distup --dry-run stable   # Dry run upgrade to stable"
+    echo ""
+}
+
+show_version() {
+    echo "distup version $VERSION"
+    echo "Copyright (c) 2025 Kris Armstrong"
+    echo "License: MIT"
+}
+
+show_supported() {
+    echo ""
+    echo "Supported Distributions:"
+    echo ""
+    echo "  Distribution          Script                    Upgrade Paths"
+    echo "  ─────────────────────────────────────────────────────────────────────"
+    echo "  Ubuntu                upgrade-ubuntu.sh         lts, release"
+    echo "  Debian                upgrade-debian.sh         stable, testing, sid"
+    echo "  Fedora                upgrade-fedora.sh         stable, rawhide"
+    echo "  Arch Linux            upgrade-arch.sh           rolling (--refresh, --clean)"
+    echo "  Alpine Linux          upgrade-alpine.sh         stable, edge"
+    echo "  Kali Linux            upgrade-kali.sh           rolling, bleeding-edge"
+    echo "  openSUSE              upgrade-opensuse.sh       leap, tumbleweed"
+    echo "  Rocky Linux           upgrade-rhel-clone.sh     --check, --upgrade"
+    echo "  AlmaLinux             upgrade-rhel-clone.sh     --check, --upgrade"
+    echo ""
+}
+
+# Detect the current Linux distribution
+detect_distro() {
+    local distro=""
+    local script=""
+
+    # Check for specific release files first (more specific)
+    if [[ -f /etc/arch-release ]]; then
+        distro="Arch Linux"
+        script="upgrade-arch.sh"
+    elif [[ -f /etc/alpine-release ]]; then
+        distro="Alpine Linux"
+        script="upgrade-alpine.sh"
+    elif [[ -f /etc/rocky-release ]]; then
+        distro="Rocky Linux"
+        script="upgrade-rhel-clone.sh"
+    elif [[ -f /etc/almalinux-release ]]; then
+        distro="AlmaLinux"
+        script="upgrade-rhel-clone.sh"
+    elif [[ -f /etc/os-release ]]; then
+        # Parse os-release for other distributions
+        local id
+        id=$(grep "^ID=" /etc/os-release | cut -d= -f2 | tr -d '"')
+
+        case "$id" in
+            ubuntu)
+                distro="Ubuntu"
+                script="upgrade-ubuntu.sh"
+                ;;
+            debian)
+                distro="Debian"
+                script="upgrade-debian.sh"
+                ;;
+            fedora)
+                distro="Fedora"
+                script="upgrade-fedora.sh"
+                ;;
+            kali)
+                distro="Kali Linux"
+                script="upgrade-kali.sh"
+                ;;
+            opensuse-leap|opensuse-tumbleweed|opensuse)
+                distro="openSUSE"
+                script="upgrade-opensuse.sh"
+                ;;
+            centos|rhel|rocky|almalinux)
+                distro="RHEL Clone"
+                script="upgrade-rhel-clone.sh"
+                ;;
+            arch|archlinux)
+                distro="Arch Linux"
+                script="upgrade-arch.sh"
+                ;;
+            alpine)
+                distro="Alpine Linux"
+                script="upgrade-alpine.sh"
+                ;;
+            *)
+                distro="Unknown ($id)"
+                script=""
+                ;;
+        esac
+    fi
+
+    echo "$distro|$script"
+}
+
+# -----------------------------------------------------------------------------
+# MAIN EXECUTION
+# -----------------------------------------------------------------------------
+
+main() {
+    local detect_only=false
+    local args=()
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --list)
+                show_banner
+                show_supported
+                exit 0
+                ;;
+            --detect)
+                detect_only=true
+                shift
+                ;;
+            --dry-run)
+                args+=("--dry-run")
+                shift
+                ;;
+            --version)
+                show_version
+                exit 0
+                ;;
+            --help|-h)
+                show_banner
+                show_usage
+                exit 0
+                ;;
+            -*)
+                # Pass through other flags
+                args+=("$1")
+                shift
+                ;;
+            *)
+                # Pass through positional arguments
+                args+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    # Show banner
+    show_banner
+
+    # Detect distribution
+    local result
+    result=$(detect_distro)
+
+    local distro
+    local script
+    distro=$(echo "$result" | cut -d'|' -f1)
+    script=$(echo "$result" | cut -d'|' -f2)
+
+    # Show detection result
+    if [[ -n "$distro" && "$distro" != "Unknown"* ]]; then
+        print_success "Detected: $distro"
+    else
+        print_error "Unable to detect distribution"
+        echo ""
+        echo "Your distribution may not be supported."
+        show_supported
+        exit 1
+    fi
+
+    # If detect only, exit here
+    if [[ "$detect_only" == true ]]; then
+        echo ""
+        echo "  Script: $script"
+        exit 0
+    fi
+
+    # Check if script exists
+    local script_path="$SCRIPT_DIR/$script"
+    if [[ ! -f "$script_path" ]]; then
+        print_error "Script not found: $script_path"
+        echo ""
+        echo "Make sure all upgrade scripts are in the same directory as distup."
+        exit 1
+    fi
+
+    # Check for root
+    if [[ $EUID -ne 0 ]]; then
+        print_error "This script must be run as root"
+        echo ""
+        echo "Usage: sudo distup [OPTIONS] [ARGS...]"
+        exit 1
+    fi
+
+    # Run the appropriate script
+    echo ""
+    print_status "Running: $script ${args[*]}"
+    echo ""
+
+    exec "$script_path" "${args[@]}"
+}
+
+# Run main function
+main "$@"

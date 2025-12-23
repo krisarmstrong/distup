@@ -5,12 +5,13 @@
 # Author:         Kris Armstrong
 # Created:        2025-12-23
 # Last Modified:  2025-12-23
-# Version:        1.0.0
+# Version:        1.1.0
 # License:        MIT
 #
 # Usage:          sudo ./upgrade-arch.sh
 #                 sudo ./upgrade-arch.sh --refresh     # Force refresh mirrors
 #                 sudo ./upgrade-arch.sh --clean       # Clean cache after upgrade
+#                 sudo ./upgrade-arch.sh --dry-run     # Show what would be done
 #
 # Requirements:   - Arch Linux
 #                 - Root/sudo privileges
@@ -22,7 +23,7 @@
 #                 - Back up important data regularly
 # =============================================================================
 
-set -e  # Exit immediately if a command exits with non-zero status
+set -e # Exit immediately if a command exits with non-zero status
 
 # -----------------------------------------------------------------------------
 # CONFIGURATION
@@ -41,6 +42,7 @@ LOG_FILE="/var/log/upgrade-arch-$(date +%Y%m%d-%H%M%S).log"
 # Options
 REFRESH_MIRRORS=false
 CLEAN_CACHE=false
+DRY_RUN=false
 
 # -----------------------------------------------------------------------------
 # FUNCTIONS
@@ -68,6 +70,16 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
+# Execute command or show in dry-run mode
+run_cmd() {
+    if [[ "$DRY_RUN" == true ]]; then
+        echo -e "${YELLOW}[DRY-RUN]${NC} Would execute: $*"
+        log "[DRY-RUN] Would execute: $*"
+    else
+        "$@"
+    fi
+}
+
 # Display usage
 show_usage() {
     echo "Usage: sudo $0 [OPTIONS]"
@@ -75,8 +87,15 @@ show_usage() {
     echo "Options:"
     echo "  --refresh    Force refresh package databases"
     echo "  --clean      Clean package cache after upgrade"
+    echo "  --dry-run    Show what would be done without making changes"
+    echo "  --version    Show version information"
     echo "  --help       Show this help message"
     echo ""
+}
+
+# Display version
+show_version() {
+    echo "upgrade-arch.sh version 1.1.0"
 }
 
 # Check if running as root
@@ -96,6 +115,88 @@ check_arch() {
     fi
 }
 
+# Display interactive menu
+show_menu() {
+    echo ""
+    echo "=========================================="
+    echo "    Arch Linux Upgrade Script v1.1.0"
+    echo "=========================================="
+    echo ""
+    echo "Select upgrade options:"
+    echo ""
+    echo "  1) Standard upgrade"
+    echo "     Update all packages to latest versions"
+    echo ""
+    echo "  2) Refresh + Upgrade"
+    echo "     Force refresh mirrors, then upgrade"
+    echo ""
+    echo "  3) Upgrade + Clean"
+    echo "     Upgrade and clean package cache"
+    echo ""
+    echo "  4) Full maintenance"
+    echo "     Refresh mirrors, upgrade, and clean cache"
+    echo ""
+    echo "  q) Quit"
+    echo ""
+    read -rp "Enter choice [1/2/3/4/q]: " choice
+
+    case $choice in
+        1) ;; # defaults are fine
+        2) REFRESH_MIRRORS=true ;;
+        3) CLEAN_CACHE=true ;;
+        4)
+            REFRESH_MIRRORS=true
+            CLEAN_CACHE=true
+            ;;
+        q | Q)
+            echo "Exiting."
+            exit 0
+            ;;
+        *)
+            print_error "Invalid choice"
+            exit 1
+            ;;
+    esac
+}
+
+# Backup pacman configuration
+backup_pacman_config() {
+    print_status "Backing up pacman configuration..."
+    log "Backing up /etc/pacman.conf and /etc/pacman.d/mirrorlist"
+
+    local backup_dir
+    backup_dir="/etc/pacman.d/backup-$(date +%Y%m%d-%H%M%S)"
+
+    if [[ "$DRY_RUN" == true ]]; then
+        run_cmd mkdir -p "$backup_dir"
+        run_cmd cp /etc/pacman.conf "$backup_dir/"
+        run_cmd cp /etc/pacman.d/mirrorlist "$backup_dir/"
+    else
+        mkdir -p "$backup_dir"
+        cp /etc/pacman.conf "$backup_dir/"
+        cp /etc/pacman.d/mirrorlist "$backup_dir/"
+        # Store backup location for potential restore
+        echo "$backup_dir" >/tmp/arch-upgrade-backup-location
+    fi
+
+    print_success "Backup saved to $backup_dir"
+}
+
+# Restore pacman configuration on failure
+restore_pacman_config() {
+    if [[ -f /tmp/arch-upgrade-backup-location ]]; then
+        local backup_dir
+        backup_dir=$(cat /tmp/arch-upgrade-backup-location)
+        if [[ -d "$backup_dir" ]]; then
+            print_warning "Restoring pacman configuration from backup..."
+            cp "$backup_dir/pacman.conf" /etc/pacman.conf
+            cp "$backup_dir/mirrorlist" /etc/pacman.d/mirrorlist
+            pacman -Sy
+            print_success "Configuration restored from $backup_dir"
+        fi
+    fi
+}
+
 # Display current system information
 show_system_info() {
     print_status "Current System Information:"
@@ -108,14 +209,14 @@ show_system_info() {
 # Check for Arch news (important announcements)
 check_arch_news() {
     print_status "Checking Arch Linux news for important updates..."
-    
+
     # Try to fetch recent news headlines
-    if command -v curl &> /dev/null; then
+    if command -v curl &>/dev/null; then
         echo ""
         echo "Recent Arch Linux News (check archlinux.org/news for details):"
         echo "---"
-        curl -s "https://archlinux.org/feeds/news/" 2>/dev/null | \
-            grep -oP '(?<=<title>).*(?=</title>)' | \
+        curl -s "https://archlinux.org/feeds/news/" 2>/dev/null |
+            grep -oP '(?<=<title>).*(?=</title>)' |
             head -5 || echo "  Unable to fetch news. Check archlinux.org/news manually."
         echo "---"
         echo ""
@@ -126,36 +227,44 @@ check_arch_news() {
 sync_databases() {
     print_status "Syncing package databases..."
     log "Running pacman -Syy"
-    
-    if [[ "$REFRESH_MIRRORS" == true ]]; then
-        # Force refresh all databases
-        pacman -Syy 2>&1 | tee -a "$LOG_FILE"
+
+    if [[ "$DRY_RUN" == true ]]; then
+        if [[ "$REFRESH_MIRRORS" == true ]]; then
+            run_cmd pacman -Syy
+        else
+            run_cmd pacman -Sy
+        fi
     else
-        # Normal sync
-        pacman -Sy 2>&1 | tee -a "$LOG_FILE"
+        if [[ "$REFRESH_MIRRORS" == true ]]; then
+            # Force refresh all databases
+            pacman -Syy 2>&1 | tee -a "$LOG_FILE"
+        else
+            # Normal sync
+            pacman -Sy 2>&1 | tee -a "$LOG_FILE"
+        fi
     fi
-    
+
     print_success "Package databases synced"
 }
 
 # Check for available updates
 check_updates() {
     print_status "Checking for available updates..."
-    
+
     local updates
     updates=$(pacman -Qu 2>/dev/null | wc -l)
-    
+
     if [[ "$updates" -eq 0 ]]; then
         print_success "System is already up to date!"
         exit 0
     else
         echo "  $updates package(s) available for upgrade"
         echo ""
-        
+
         # Show packages to be upgraded
         print_status "Packages to be upgraded:"
         pacman -Qu 2>/dev/null | head -20
-        
+
         local total
         total=$(pacman -Qu 2>/dev/null | wc -l)
         if [[ "$total" -gt 20 ]]; then
@@ -170,9 +279,13 @@ perform_upgrade() {
     print_status "Upgrading system packages..."
     print_warning "Review any prompts carefully. Do not interrupt."
     log "Running pacman -Syu"
-    
-    pacman -Syu --noconfirm 2>&1 | tee -a "$LOG_FILE"
-    
+
+    if [[ "$DRY_RUN" == true ]]; then
+        run_cmd pacman -Syu --noconfirm
+    else
+        pacman -Syu --noconfirm 2>&1 | tee -a "$LOG_FILE"
+    fi
+
     print_success "System packages upgraded"
 }
 
@@ -181,10 +294,14 @@ clean_cache() {
     if [[ "$CLEAN_CACHE" == true ]]; then
         print_status "Cleaning package cache..."
         log "Running pacman -Sc"
-        
-        # Remove old package versions, keep only latest
-        pacman -Sc --noconfirm 2>&1 | tee -a "$LOG_FILE"
-        
+
+        if [[ "$DRY_RUN" == true ]]; then
+            run_cmd pacman -Sc --noconfirm
+        else
+            # Remove old package versions, keep only latest
+            pacman -Sc --noconfirm 2>&1 | tee -a "$LOG_FILE"
+        fi
+
         print_success "Package cache cleaned"
     fi
 }
@@ -192,10 +309,10 @@ clean_cache() {
 # Check for orphaned packages
 check_orphans() {
     print_status "Checking for orphaned packages..."
-    
+
     local orphans
     orphans=$(pacman -Qtdq 2>/dev/null | wc -l)
-    
+
     if [[ "$orphans" -gt 0 ]]; then
         print_warning "Found $orphans orphaned package(s):"
         pacman -Qtdq 2>/dev/null
@@ -209,10 +326,10 @@ check_orphans() {
 # Check for .pacnew/.pacsave files
 check_pacnew() {
     print_status "Checking for .pacnew/.pacsave files..."
-    
+
     local pacnew
     pacnew=$(find /etc -name "*.pacnew" -o -name "*.pacsave" 2>/dev/null | wc -l)
-    
+
     if [[ "$pacnew" -gt 0 ]]; then
         print_warning "Found $pacnew configuration file(s) needing attention:"
         find /etc -name "*.pacnew" -o -name "*.pacsave" 2>/dev/null
@@ -227,9 +344,23 @@ check_pacnew() {
 show_final_info() {
     echo ""
     echo "=========================================="
-    echo "    Upgrade Complete"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "    Dry Run Complete"
+    else
+        echo "    Upgrade Complete"
+    fi
     echo "=========================================="
     echo ""
+
+    if [[ "$DRY_RUN" == true ]]; then
+        print_success "Dry run completed - no changes were made"
+        echo ""
+        echo "  Log file:     $LOG_FILE"
+        echo ""
+        print_status "Run without --dry-run to perform actual upgrade"
+        return
+    fi
+
     print_success "System has been upgraded"
     echo ""
     echo "  Distribution: Arch Linux"
@@ -237,17 +368,17 @@ show_final_info() {
     echo ""
     echo "  Log file:     $LOG_FILE"
     echo ""
-    
+
     # Check if kernel was upgraded
     local running_kernel installed_kernel
     running_kernel=$(uname -r)
     installed_kernel=$(pacman -Q linux 2>/dev/null | awk '{print $2}' || echo "unknown")
-    
+
     if [[ "$running_kernel" != *"$installed_kernel"* ]]; then
         print_warning "Kernel was upgraded. Reboot required!"
         echo ""
-        read -p "Reboot now? [y/N]: " reboot_choice
-        
+        read -rp "Reboot now? [y/N]: " reboot_choice
+
         if [[ "$reboot_choice" =~ ^[Yy]$ ]]; then
             log "User initiated reboot"
             reboot
@@ -263,18 +394,31 @@ show_final_info() {
 # -----------------------------------------------------------------------------
 
 main() {
+    # Track if any options were provided
+    local has_options=false
+
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
             --refresh)
                 REFRESH_MIRRORS=true
+                has_options=true
                 shift
                 ;;
             --clean)
                 CLEAN_CACHE=true
+                has_options=true
                 shift
                 ;;
-            --help)
+            --dry-run)
+                DRY_RUN=true
+                shift
+                ;;
+            --version | -V)
+                show_version
+                exit 0
+                ;;
+            --help | -h)
                 show_usage
                 exit 0
                 ;;
@@ -285,35 +429,56 @@ main() {
                 ;;
         esac
     done
-    
+
+    # Set trap to restore config on failure
+    trap restore_pacman_config ERR
+
     # Pre-flight checks
     check_root
     check_arch
-    
+
     # Initialize log
     log "=== Arch Linux Upgrade Script Started ==="
-    
-    echo ""
-    echo "=========================================="
-    echo "    Arch Linux Upgrade Script v1.0.0"
-    echo "=========================================="
-    echo ""
-    
+    [[ "$DRY_RUN" == true ]] && log "DRY RUN MODE - No changes will be made"
+
+    # Show dry-run banner
+    if [[ "$DRY_RUN" == true ]]; then
+        echo ""
+        echo -e "${YELLOW}=========================================="
+        echo "           DRY RUN MODE"
+        echo "    No changes will be made to system"
+        echo "==========================================${NC}"
+    fi
+
     # Show current system info
     show_system_info
-    
+
+    # Show menu if no options provided (excluding --dry-run)
+    if [[ "$has_options" == false && "$DRY_RUN" == false ]]; then
+        show_menu
+    elif [[ "$has_options" == false && "$DRY_RUN" == true ]]; then
+        # In dry-run mode without options, show what standard upgrade would do
+        echo ""
+        echo "=========================================="
+        echo "    Arch Linux Upgrade Script v1.1.0"
+        echo "=========================================="
+        echo ""
+    fi
+
     # Check Arch news
     check_arch_news
-    
+
     # Confirm before proceeding
-    read -p "Continue with system upgrade? [y/N]: " confirm
-    
+    read -rp "Continue with system upgrade? [y/N]: " confirm
+
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         echo "Upgrade cancelled."
         exit 0
     fi
-    
+
     # Execute upgrade steps
+    echo ""
+    backup_pacman_config
     echo ""
     sync_databases
     echo ""
@@ -325,10 +490,10 @@ main() {
     check_orphans
     echo ""
     check_pacnew
-    
+
     # Show results
     show_final_info
-    
+
     log "=== Arch Linux Upgrade Script Completed ==="
 }
 
