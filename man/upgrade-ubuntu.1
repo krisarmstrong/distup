@@ -1,0 +1,73 @@
+.TH UPGRADE-UBUNTU 1 "December 2025" "distup 1.2.0" "User Commands"
+.SH NAME
+upgrade-ubuntu \- upgrade Ubuntu to latest LTS or standard release
+.SH SYNOPSIS
+.B upgrade-ubuntu
+[\fIOPTIONS\fR] [\fBlts\fR|\fBrelease\fR]
+.SH DESCRIPTION
+.B upgrade-ubuntu
+upgrades Ubuntu systems to the latest LTS (Long Term Support) or standard
+release. It handles package updates, release configuration, and the actual
+distribution upgrade using do-release-upgrade.
+.SH OPTIONS
+.TP
+.B \-\-dry\-run
+Show what would be done without making any changes. Useful for previewing
+the upgrade process.
+.TP
+.B \-\-version\fR, \fB\-V
+Show version information.
+.TP
+.B \-\-help\fR, \fB\-h
+Show help message.
+.SH MODES
+.TP
+.B lts
+Upgrade to the latest Long Term Support release. LTS releases have 5-year
+support and are recommended for servers and production systems.
+.TP
+.B release
+Upgrade to the latest available release, including interim releases. Interim
+releases have 9-month support and include the newest features.
+.PP
+If no mode is specified, an interactive menu is displayed.
+.SH EXAMPLES
+.TP
+.B sudo upgrade-ubuntu
+Show interactive menu to choose upgrade path.
+.TP
+.B sudo upgrade-ubuntu lts
+Upgrade to latest LTS release.
+.TP
+.B sudo upgrade-ubuntu \-\-dry\-run release
+Preview upgrade to latest release without making changes.
+.SH FILES
+.TP
+.I /var/log/upgrade-ubuntu-*.log
+Log file containing detailed upgrade output.
+.TP
+.I /etc/update-manager/release-upgrades
+Configuration file for release upgrade behavior.
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+Error (not Ubuntu, not root, upgrade failed, etc.).
+.SH NOTES
+.IP \(bu 2
+A system reboot is required after upgrade.
+.IP \(bu 2
+Back up important data before upgrading.
+.IP \(bu 2
+Release upgrades may require multiple runs (one version at a time).
+.IP \(bu 2
+Minimum 5GB disk space recommended.
+.SH AUTHOR
+Written by Kris Armstrong.
+.SH SEE ALSO
+.BR distup (1),
+.BR do-release-upgrade (8)
+.SH COPYRIGHT
+Copyright \(co 2025 Kris Armstrong. License: MIT.

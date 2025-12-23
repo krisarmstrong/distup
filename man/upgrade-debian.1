@@ -1,0 +1,44 @@
+.TH UPGRADE-DEBIAN 1 "December 2025" "distup 1.2.0" "User Commands"
+.SH NAME
+upgrade-debian \- upgrade Debian to stable, testing, or sid
+.SH SYNOPSIS
+.B upgrade-debian
+[\fIOPTIONS\fR] [\fBstable\fR|\fBtesting\fR|\fBsid\fR]
+.SH DESCRIPTION
+.B upgrade-debian
+upgrades Debian systems to stable, testing, or sid/unstable branches.
+It handles repository configuration, package updates, and full system upgrade.
+.SH OPTIONS
+.TP
+.B \-\-dry\-run
+Show what would be done without making any changes.
+.TP
+.B \-\-version\fR, \fB\-V
+Show version information.
+.TP
+.B \-\-help\fR, \fB\-h
+Show help message.
+.SH MODES
+.TP
+.B stable
+Current stable release. Recommended for production systems.
+.TP
+.B testing
+Testing branch with newer packages. May have occasional bugs.
+.TP
+.B sid
+Unstable/sid branch. Rolling release with latest packages.
+.SH FILES
+.TP
+.I /etc/apt/sources.list
+Repository configuration (backed up before modification).
+.TP
+.I /var/log/upgrade-debian-*.log
+Log file containing detailed upgrade output.
+.SH AUTHOR
+Written by Kris Armstrong.
+.SH SEE ALSO
+.BR distup (1),
+.BR apt (8)
+.SH COPYRIGHT
+Copyright \(co 2025 Kris Armstrong. License: MIT.

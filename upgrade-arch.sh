@@ -5,7 +5,7 @@
 # Author:         Kris Armstrong
 # Created:        2025-12-23
 # Last Modified:  2025-12-23
-# Version:        1.1.0
+# Version:        1.2.0
 # License:        MIT
 #
 # Usage:          sudo ./upgrade-arch.sh
@@ -43,6 +43,22 @@ LOG_FILE="/var/log/upgrade-arch-$(date +%Y%m%d-%H%M%S).log"
 REFRESH_MIRRORS=false
 CLEAN_CACHE=false
 DRY_RUN=false
+SKIP_CHECKS=false
+
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/checks.sh" ]]; then
+    # shellcheck source=lib/checks.sh
+    source "$SCRIPT_DIR/lib/checks.sh"
+fi
+if [[ -f "$SCRIPT_DIR/lib/snapshot.sh" ]]; then
+    # shellcheck source=lib/snapshot.sh
+    source "$SCRIPT_DIR/lib/snapshot.sh"
+fi
+if [[ -f "$SCRIPT_DIR/lib/hooks.sh" ]]; then
+    # shellcheck source=lib/hooks.sh
+    source "$SCRIPT_DIR/lib/hooks.sh"
+fi
 
 # -----------------------------------------------------------------------------
 # FUNCTIONS
@@ -85,17 +101,18 @@ show_usage() {
     echo "Usage: sudo $0 [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  --refresh    Force refresh package databases"
-    echo "  --clean      Clean package cache after upgrade"
-    echo "  --dry-run    Show what would be done without making changes"
-    echo "  --version    Show version information"
-    echo "  --help       Show this help message"
+    echo "  --refresh      Force refresh package databases"
+    echo "  --clean        Clean package cache after upgrade"
+    echo "  --dry-run      Show what would be done without making changes"
+    echo "  --skip-checks  Skip pre-upgrade system checks"
+    echo "  --version      Show version information"
+    echo "  --help         Show this help message"
     echo ""
 }
 
 # Display version
 show_version() {
-    echo "upgrade-arch.sh version 1.1.0"
+    echo "upgrade-arch.sh version 1.2.0"
 }
 
 # Check if running as root
@@ -119,7 +136,7 @@ check_arch() {
 show_menu() {
     echo ""
     echo "=========================================="
-    echo "    Arch Linux Upgrade Script v1.1.0"
+    echo "    Arch Linux Upgrade Script v1.2.0"
     echo "=========================================="
     echo ""
     echo "Select upgrade options:"
@@ -216,7 +233,7 @@ check_arch_news() {
         echo "Recent Arch Linux News (check archlinux.org/news for details):"
         echo "---"
         curl -s "https://archlinux.org/feeds/news/" 2>/dev/null |
-            grep -oP '(?<=<title>).*(?=</title>)' |
+            sed -n 's/.*<title>\([^<]*\)<\/title>.*/\1/p' |
             head -5 || echo "  Unable to fetch news. Check archlinux.org/news manually."
         echo "---"
         echo ""
@@ -414,6 +431,10 @@ main() {
                 DRY_RUN=true
                 shift
                 ;;
+            --skip-checks)
+                SKIP_CHECKS=true
+                shift
+                ;;
             --version | -V)
                 show_version
                 exit 0
@@ -436,6 +457,15 @@ main() {
     # Pre-flight checks
     check_root
     check_arch
+
+    # Run pre-upgrade system checks
+    if [[ "$SKIP_CHECKS" != true && "$DRY_RUN" != true ]]; then
+        if type run_pre_upgrade_checks &>/dev/null; then
+            if ! run_pre_upgrade_checks; then
+                exit 1
+            fi
+        fi
+    fi
 
     # Initialize log
     log "=== Arch Linux Upgrade Script Started ==="
@@ -460,7 +490,7 @@ main() {
         # In dry-run mode without options, show what standard upgrade would do
         echo ""
         echo "=========================================="
-        echo "    Arch Linux Upgrade Script v1.1.0"
+        echo "    Arch Linux Upgrade Script v1.2.0"
         echo "=========================================="
         echo ""
     fi

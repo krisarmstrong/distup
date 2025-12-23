@@ -1,0 +1,40 @@
+.TH UPGRADE-KALI 1 "December 2025" "distup 1.2.0" "User Commands"
+.SH NAME
+upgrade-kali \- upgrade Kali Linux rolling or bleeding-edge
+.SH SYNOPSIS
+.B upgrade-kali
+[\fIOPTIONS\fR] [\fBrolling\fR|\fBbleeding-edge\fR]
+.SH DESCRIPTION
+.B upgrade-kali
+upgrades Kali Linux systems using the rolling or bleeding-edge repositories.
+.SH OPTIONS
+.TP
+.B \-\-dry\-run
+Show what would be done without making any changes.
+.TP
+.B \-\-version\fR, \fB\-V
+Show version information.
+.TP
+.B \-\-help\fR, \fB\-h
+Show help message.
+.SH MODES
+.TP
+.B rolling
+Standard Kali rolling release (recommended).
+.TP
+.B bleeding-edge
+Add bleeding-edge repository with experimental packages.
+.SH FILES
+.TP
+.I /etc/apt/sources.list
+Repository configuration (backed up before modification).
+.TP
+.I /var/log/upgrade-kali-*.log
+Log file containing detailed upgrade output.
+.SH AUTHOR
+Written by Kris Armstrong.
+.SH SEE ALSO
+.BR distup (1),
+.BR apt (8)
+.SH COPYRIGHT
+Copyright \(co 2025 Kris Armstrong. License: MIT.

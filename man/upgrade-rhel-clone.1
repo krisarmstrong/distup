@@ -1,0 +1,62 @@
+.TH UPGRADE-RHEL-CLONE 1 "December 2025" "distup 1.2.0" "User Commands"
+.SH NAME
+upgrade-rhel-clone \- upgrade Rocky Linux or AlmaLinux to next major version
+.SH SYNOPSIS
+.B upgrade-rhel-clone
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B upgrade-rhel-clone
+upgrades Rocky Linux or AlmaLinux systems to the next major version using
+the ELevate project and leapp upgrade tool.
+.SH OPTIONS
+.TP
+.B \-\-check
+Run pre-upgrade check only. Recommended before upgrading.
+.TP
+.B \-\-upgrade
+Perform the actual upgrade after reviewing check results.
+.TP
+.B \-\-dry\-run
+Show what would be done without making any changes.
+.TP
+.B \-\-version\fR, \fB\-V
+Show version information.
+.TP
+.B \-\-help\fR, \fB\-h
+Show help message.
+.SH WORKFLOW
+.IP 1. 3
+Run with \fB\-\-check\fR to analyze system and generate report.
+.IP 2. 3
+Review /var/log/leapp/leapp-report.txt for issues.
+.IP 3. 3
+Resolve any high-severity issues.
+.IP 4. 3
+Run with \fB\-\-upgrade\fR to perform actual upgrade.
+.SH FILES
+.TP
+.I /etc/yum.repos.d/
+Repository configuration (backed up before modification).
+.TP
+.I /var/log/leapp/leapp-report.txt
+Pre-upgrade analysis report.
+.TP
+.I /var/log/upgrade-rhel-clone-*.log
+Log file containing detailed upgrade output.
+.SH NOTES
+.IP \(bu 2
+Major version upgrades require careful planning.
+.IP \(bu 2
+System will reboot during upgrade process.
+.IP \(bu 2
+Process may take 30-60 minutes.
+.IP \(bu 2
+Test in non-production environment first.
+.SH AUTHOR
+Written by Kris Armstrong.
+.SH SEE ALSO
+.BR distup (1),
+.BR leapp (8),
+.BR dnf (8)
+.SH COPYRIGHT
+Copyright \(co 2025 Kris Armstrong. License: MIT.

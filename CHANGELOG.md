@@ -10,9 +10,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 
 - Support for additional distributions (Gentoo, Void Linux, NixOS)
-- Configuration file support for custom mirrors
+- Configuration file support for custom mirrors ([#1](https://github.com/krisarmstrong/distup/issues/1))
 - Backup verification before upgrades
-- Integration with timeshift/snapper for system snapshots
+
+---
+
+## [1.2.0] - 2025-12-23
+
+### Added
+
+- **Pre-upgrade System Checks (`lib/checks.sh`):**
+  - Disk space verification (configurable minimum, default 5GB)
+  - Network connectivity validation (tests multiple endpoints)
+  - Battery status check for laptops (warns if on battery with low charge)
+  - `--skip-checks` flag to bypass pre-upgrade checks
+
+- **Snapshot Integration (`lib/snapshot.sh`):**
+  - Automatic detection of snapshot tools (Timeshift, Snapper, btrfs, LVM)
+  - Pre-upgrade snapshot creation with prompts
+  - Support for Timeshift snapshots (desktop systems)
+  - Support for Snapper snapshots (openSUSE/server systems)
+  - Support for native btrfs snapshots
+  - Support for LVM snapshots
+
+- **Post-upgrade Hook System (`lib/hooks.sh`):**
+  - System-wide hooks in `/etc/distup/hooks.d/`
+  - User-specific hooks in `~/.config/distup/hooks.d/`
+  - Separate pre-upgrade and post-upgrade hook directories
+  - Automatic hook discovery and execution
+
+- **Man Pages:**
+  - Added man pages for distup and all 8 upgrade scripts
+  - Installed to `$PREFIX/share/man/man1/` via Makefile
+
+### Fixed
+
+- **POSIX Compatibility:**
+  - Replaced `grep -P` (PCRE) with POSIX-compatible `sed` patterns
+  - Fixed Alpine Linux version detection (BusyBox grep compatibility)
+  - Fixed Fedora version detection from release page
+  - Fixed Arch Linux news title extraction
+
+- **Version Detection:**
+  - Fixed openSUSE Leap version detection (handles `./15.6/` format)
+  - Added filtering for legacy openSUSE versions (42.x)
+
+### Changed
+
+- Updated all scripts to source shared library files
+- Improved help text formatting with consistent spacing
 
 ---
 
