@@ -1,0 +1,74 @@
+# =============================================================================
+# distup Release Pipeline
+# Creates GitHub release when a version tag is pushed
+# =============================================================================
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create tarball
+        run: |
+          mkdir -p dist
+          tar -czvf dist/distup-${{ steps.version.outputs.VERSION }}.tar.gz \
+            --exclude='.git*' \
+            --exclude='dist' \
+            .
+
+      - name: Create zip
+        run: |
+          zip -r dist/distup-${{ steps.version.outputs.VERSION }}.zip . \
+            -x '.git*' \
+            -x 'dist/*'
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "## What's in this release" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### Supported Distributions" >> $GITHUB_OUTPUT
+          echo "- Ubuntu (LTS or latest release)" >> $GITHUB_OUTPUT
+          echo "- Fedora (Stable or Rawhide)" >> $GITHUB_OUTPUT
+          echo "- Debian (Stable, Testing, or Sid)" >> $GITHUB_OUTPUT
+          echo "- Alpine (Stable or Edge)" >> $GITHUB_OUTPUT
+          echo "- Kali Linux (Rolling or Bleeding-edge)" >> $GITHUB_OUTPUT
+          echo "- Arch Linux (Rolling)" >> $GITHUB_OUTPUT
+          echo "- Rocky/AlmaLinux (Major version upgrades)" >> $GITHUB_OUTPUT
+          echo "- openSUSE (Leap or Tumbleweed)" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### Installation" >> $GITHUB_OUTPUT
+          echo "\`\`\`bash" >> $GITHUB_OUTPUT
+          echo "git clone https://github.com/krisarmstrong/distup.git" >> $GITHUB_OUTPUT
+          echo "cd distup && chmod +x upgrade-*.sh" >> $GITHUB_OUTPUT
+          echo "\`\`\`" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: distup ${{ steps.version.outputs.VERSION }}
+          body: ${{ steps.changelog.outputs.CHANGELOG }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/distup-${{ steps.version.outputs.VERSION }}.tar.gz
+            dist/distup-${{ steps.version.outputs.VERSION }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

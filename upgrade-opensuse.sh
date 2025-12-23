@@ -1,0 +1,369 @@
+#!/bin/bash
+# =============================================================================
+# Script Name:    upgrade-opensuse.sh
+# Description:    Upgrade openSUSE Leap to latest or switch to Tumbleweed
+# Author:         Kris Armstrong
+# Created:        2025-12-23
+# Last Modified:  2025-12-23
+# Version:        1.0.0
+# License:        MIT
+#
+# Usage:          sudo ./upgrade-opensuse.sh [leap|tumbleweed]
+#                 sudo ./upgrade-opensuse.sh               # Interactive menu
+#                 sudo ./upgrade-opensuse.sh leap          # Latest Leap
+#                 sudo ./upgrade-opensuse.sh tumbleweed    # Switch to Tumbleweed
+#
+# Requirements:   - openSUSE Leap 15.x or Tumbleweed
+#                 - Root/sudo privileges
+#                 - Active internet connection
+#                 - Sufficient disk space (~5GB recommended)
+#
+# Supported Paths:
+#   Leap:         Latest stable Leap release (e.g., 15.5 → 15.6)
+#   Tumbleweed:   Rolling release (bleeding edge)
+#
+# Notes:          - Switching to Tumbleweed is generally a one-way trip
+#                 - Tumbleweed receives daily updates
+#                 - Back up important data before upgrading
+# =============================================================================
+
+set -e  # Exit immediately if a command exits with non-zero status
+
+# -----------------------------------------------------------------------------
+# CONFIGURATION
+# -----------------------------------------------------------------------------
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Logging
+LOG_FILE="/var/log/upgrade-opensuse-$(date +%Y%m%d-%H%M%S).log"
+
+# openSUSE mirror
+OPENSUSE_MIRROR="https://download.opensuse.org"
+
+# -----------------------------------------------------------------------------
+# FUNCTIONS
+# -----------------------------------------------------------------------------
+
+# Print colored status messages
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Log message to file and stdout
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+# Check if running as root
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        print_error "This script must be run as root"
+        echo "Usage: sudo $0 [leap|tumbleweed]"
+        exit 1
+    fi
+}
+
+# Check if system is openSUSE
+check_opensuse() {
+    if [[ ! -f /etc/os-release ]]; then
+        print_error "Cannot determine distribution"
+        exit 1
+    fi
+    
+    if ! grep -qi "opensuse" /etc/os-release; then
+        print_error "This script is designed for openSUSE only"
+        exit 1
+    fi
+}
+
+# Detect if running Leap or Tumbleweed
+detect_variant() {
+    if grep -qi "tumbleweed" /etc/os-release; then
+        CURRENT_VARIANT="tumbleweed"
+    else
+        CURRENT_VARIANT="leap"
+    fi
+}
+
+# Get latest Leap version
+get_latest_leap() {
+    curl -s "${OPENSUSE_MIRROR}/distribution/leap/" | \
+        grep -oP 'href="\K[0-9]+\.[0-9]+(?=/")' | \
+        sort -V | \
+        tail -1
+}
+
+# Display current system information
+show_system_info() {
+    print_status "Current System Information:"
+    echo "  Distribution: $(grep PRETTY_NAME /etc/os-release | cut -d'"' -f2)"
+    echo "  Variant:      $CURRENT_VARIANT"
+    echo "  Kernel:       $(uname -r)"
+    echo ""
+}
+
+# Display interactive menu
+show_menu() {
+    echo ""
+    echo "=========================================="
+    echo "    openSUSE Upgrade Script v1.0.0"
+    echo "=========================================="
+    echo ""
+    echo "Current: $CURRENT_VARIANT"
+    echo ""
+    echo "Select upgrade path:"
+    echo ""
+    echo "  1) Leap       - Latest stable Leap release"
+    echo "                 (Recommended for servers/workstations)"
+    echo ""
+    echo "  2) Tumbleweed - Rolling release"
+    echo "                 (Latest packages, continuous updates)"
+    echo ""
+    echo "  q) Quit"
+    echo ""
+    read -p "Enter choice [1/2/q]: " choice
+    
+    case $choice in
+        1) MODE="leap" ;;
+        2) MODE="tumbleweed" ;;
+        q|Q) echo "Exiting."; exit 0 ;;
+        *) print_error "Invalid choice"; exit 1 ;;
+    esac
+}
+
+# Backup repository configuration
+backup_repos() {
+    print_status "Backing up repository configuration..."
+    log "Backing up /etc/zypp/repos.d/"
+    
+    if [[ -d /etc/zypp/repos.d ]]; then
+        cp -r /etc/zypp/repos.d /etc/zypp/repos.d.bak
+    fi
+    
+    print_success "Backup saved to /etc/zypp/repos.d.bak"
+}
+
+# Refresh repositories
+refresh_repos() {
+    print_status "Refreshing repositories..."
+    log "Running zypper ref"
+    
+    zypper --non-interactive ref 2>&1 | tee -a "$LOG_FILE"
+    
+    print_success "Repositories refreshed"
+}
+
+# Upgrade to latest Leap
+upgrade_to_leap() {
+    local target_version
+    target_version=$(get_latest_leap)
+    
+    print_status "Upgrading to openSUSE Leap $target_version..."
+    log "Target: Leap $target_version"
+    
+    # Change repositories to target version
+    print_status "Updating repository URLs..."
+    zypper --releasever="$target_version" ref 2>&1 | tee -a "$LOG_FILE"
+    
+    # Perform distribution upgrade
+    print_status "Performing distribution upgrade..."
+    print_warning "This may take a while. Do not interrupt."
+    
+    zypper --releasever="$target_version" dup --no-allow-vendor-change -y 2>&1 | tee -a "$LOG_FILE"
+    
+    print_success "Upgraded to Leap $target_version"
+}
+
+# Switch to Tumbleweed
+switch_to_tumbleweed() {
+    print_status "Switching to openSUSE Tumbleweed..."
+    log "Target: Tumbleweed"
+    
+    # Disable all current repos
+    print_status "Disabling current repositories..."
+    zypper modifyrepo --disable --all 2>&1 | tee -a "$LOG_FILE"
+    
+    # Add Tumbleweed repositories
+    print_status "Adding Tumbleweed repositories..."
+    
+    zypper addrepo --check --refresh --name "openSUSE-Tumbleweed-Oss" \
+        "${OPENSUSE_MIRROR}/tumbleweed/repo/oss/" repo-oss 2>&1 | tee -a "$LOG_FILE" || true
+    
+    zypper addrepo --check --refresh --name "openSUSE-Tumbleweed-Non-Oss" \
+        "${OPENSUSE_MIRROR}/tumbleweed/repo/non-oss/" repo-non-oss 2>&1 | tee -a "$LOG_FILE" || true
+    
+    zypper addrepo --check --refresh --name "openSUSE-Tumbleweed-Update" \
+        "${OPENSUSE_MIRROR}/update/tumbleweed/" repo-update 2>&1 | tee -a "$LOG_FILE" || true
+    
+    # Refresh and upgrade
+    print_status "Refreshing repositories..."
+    zypper --non-interactive ref 2>&1 | tee -a "$LOG_FILE"
+    
+    print_status "Performing distribution upgrade..."
+    print_warning "This may take a while. Do not interrupt."
+    
+    zypper dup --no-allow-vendor-change -y 2>&1 | tee -a "$LOG_FILE"
+    
+    print_success "Switched to Tumbleweed"
+}
+
+# Update Tumbleweed (if already on it)
+update_tumbleweed() {
+    print_status "Updating Tumbleweed..."
+    log "Updating existing Tumbleweed"
+    
+    zypper --non-interactive ref 2>&1 | tee -a "$LOG_FILE"
+    zypper dup -y 2>&1 | tee -a "$LOG_FILE"
+    
+    print_success "Tumbleweed updated"
+}
+
+# Display final information
+show_final_info() {
+    echo ""
+    echo "=========================================="
+    echo "    Upgrade Complete"
+    echo "=========================================="
+    echo ""
+    print_success "System has been upgraded"
+    echo ""
+    echo "  Distribution: $(grep PRETTY_NAME /etc/os-release | cut -d'"' -f2)"
+    echo "  Kernel:       $(uname -r)"
+    echo ""
+    echo "  Log file:     $LOG_FILE"
+    echo ""
+    print_warning "A system reboot is recommended"
+    echo ""
+    read -p "Reboot now? [y/N]: " reboot_choice
+    
+    if [[ "$reboot_choice" =~ ^[Yy]$ ]]; then
+        log "User initiated reboot"
+        reboot
+    else
+        echo ""
+        echo "Run 'sudo reboot' when ready"
+    fi
+}
+
+# Restore repos on failure
+restore_repos() {
+    if [[ -d /etc/zypp/repos.d.bak ]]; then
+        print_warning "Restoring original repositories..."
+        rm -rf /etc/zypp/repos.d
+        mv /etc/zypp/repos.d.bak /etc/zypp/repos.d
+        zypper ref
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# MAIN EXECUTION
+# -----------------------------------------------------------------------------
+
+main() {
+    # Parse command line argument
+    MODE=${1:-menu}
+    
+    # Validate mode if provided
+    if [[ "$MODE" != "menu" && "$MODE" != "leap" && "$MODE" != "tumbleweed" ]]; then
+        print_error "Invalid argument: $MODE"
+        echo "Usage: sudo $0 [leap|tumbleweed]"
+        exit 1
+    fi
+    
+    # Set trap to restore repos on failure
+    trap restore_repos ERR
+    
+    # Pre-flight checks
+    check_root
+    check_opensuse
+    detect_variant
+    
+    # Initialize log
+    log "=== openSUSE Upgrade Script Started ==="
+    log "Current variant: $CURRENT_VARIANT"
+    
+    # Show current system info
+    show_system_info
+    
+    # Show menu if no argument provided
+    if [[ "$MODE" == "menu" ]]; then
+        show_menu
+    fi
+    
+    log "Selected upgrade mode: $MODE"
+    
+    # Display target
+    echo ""
+    if [[ "$MODE" == "tumbleweed" ]]; then
+        print_status "Upgrade Plan:"
+        echo "  Current: $CURRENT_VARIANT"
+        echo "  Target:  Tumbleweed (rolling)"
+        
+        if [[ "$CURRENT_VARIANT" != "tumbleweed" ]]; then
+            echo ""
+            print_warning "=========================================="
+            print_warning "WARNING: Switching to Tumbleweed!"
+            print_warning "- This is generally a one-way migration"
+            print_warning "- You will receive daily updates"
+            print_warning "- Not recommended for production servers"
+            print_warning "=========================================="
+        fi
+    else
+        local latest
+        latest=$(get_latest_leap)
+        print_status "Upgrade Plan:"
+        echo "  Target: openSUSE Leap $latest"
+    fi
+    echo ""
+    
+    # Confirm before proceeding
+    read -p "Continue with upgrade? [y/N]: " confirm
+    
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        echo "Upgrade cancelled."
+        exit 0
+    fi
+    
+    # Execute upgrade steps
+    echo ""
+    backup_repos
+    echo ""
+    refresh_repos
+    echo ""
+    
+    if [[ "$MODE" == "tumbleweed" ]]; then
+        if [[ "$CURRENT_VARIANT" == "tumbleweed" ]]; then
+            update_tumbleweed
+        else
+            switch_to_tumbleweed
+        fi
+    else
+        upgrade_to_leap
+    fi
+    
+    # Show results
+    show_final_info
+    
+    log "=== openSUSE Upgrade Script Completed ==="
+}
+
+# Run main function with all arguments
+main "$@"

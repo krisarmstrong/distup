@@ -1,0 +1,51 @@
+# =============================================================================
+# distup .gitignore
+# =============================================================================
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor/IDE files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.*.kate-swp
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Test output
+test-results/
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Archives
+*.tar.gz
+*.zip
+*.tgz
+
+# Local environment
+.env
+.env.local
+*.local
