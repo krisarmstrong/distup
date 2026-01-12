@@ -1,0 +1,20 @@
+# ShellCheck configuration - Platinum Bash standards
+# https://github.com/koalaman/shellcheck/wiki
+
+# Enable all optional checks
+enable=all
+
+# Disable specific checks that are too noisy or not applicable
+disable=SC2317  # Command appears to be unreachable (false positives in functions)
+
+# Severity level (error, warning, info, style)
+severity=style
+
+# Shell dialect (bash, sh, dash, ksh)
+shell=bash
+
+# Source path for included files
+source-path=SCRIPTDIR
+
+# External sources that are not checked
+# external-sources=true
