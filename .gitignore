@@ -1,54 +1,64 @@
-# =============================================================================
-# distup .gitignore
-# =============================================================================
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║ distup - .gitignore                                                       ║
+# ╠═══════════════════════════════════════════════════════════════════════════╣
+# ║ Distribution/package update and management tool                           ║
+# ║ Stack: C/C++, shell scripts                                               ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
 
-# Logs
+# ─── Build Outputs ───────────────────────────────────────────────────────────
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.exe
+*.dll
+*.out
+
+# Build directories
+build/
+dist/
+*.dSYM/
+
+# ─── Environment & Secrets ───────────────────────────────────────────────────
+.env
+.env.local
+.env.*
+*.local
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
 *.log
 logs/
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# ─── Testing ─────────────────────────────────────────────────────────────────
+test-results/
+coverage/
 
-# Editor/IDE files
+# ─── Temporary Files ─────────────────────────────────────────────────────────
+*.tmp
+*.temp
+tmp/
+temp/
+*~
+
+# ─── Backup Files ────────────────────────────────────────────────────────────
+*.bak
+*.backup
+*.orig
+
+# ─── Archives ────────────────────────────────────────────────────────────────
+*.tar.gz
+*.zip
+*.tgz
+
+# ─── IDE & Editors ───────────────────────────────────────────────────────────
 *.swp
 *.swo
-*~
 .idea/
 .vscode/
 *.sublime-project
 *.sublime-workspace
 .*.kate-swp
 
-# Backup files
-*.bak
-*.backup
-*.orig
-
-# Test output
-test-results/
-coverage/
-
-# Temporary files
-*.tmp
-*.temp
-tmp/
-temp/
-
-# Archives
-*.tar.gz
-*.zip
-*.tgz
-
-# Local environment
-.env
-.env.local
-*.local
-
-# Claude Code
+# ─── AI Artifacts ────────────────────────────────────────────────────────────
 .claude/
