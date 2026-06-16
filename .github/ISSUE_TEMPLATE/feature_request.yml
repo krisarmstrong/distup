@@ -1,51 +1,78 @@
-name: Feature Request
-description: Suggest a new feature or enhancement
-title: "[Feature]: "
-labels: ["enhancement"]
+name: Feature
+description: Propose a new capability or meaningful improvement for Distup
+title: "Feature: "
+labels: ["type: feature", "status: needs-triage"]
 body:
-  - type: markdown
+  - type: textarea
+    id: problem
     attributes:
-      value: |
-        Thanks for suggesting a feature!
-
+      label: Problem
+      description: What user or maintainer problem should this solve?
+      placeholder: Describe the problem without assuming a specific implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired Outcome
+      description: What should be true when this is done?
+    validations:
+      required: true
   - type: dropdown
-    id: type
+    id: area
     attributes:
-      label: Feature Type
+      label: Area
       options:
-        - New distribution support
-        - New upgrade path
-        - Script enhancement
-        - Documentation improvement
-        - Other
+        - area: api
+        - area: build
+        - area: ci
+        - area: cli
+        - area: config
+        - area: data
+        - area: docs
+        - area: frontend
+        - area: infra
+        - area: packaging
+        - area: security
+        - area: tests
+        - area: tooling
     validations:
       required: true
-
-  - type: textarea
-    id: description
+  - type: dropdown
+    id: priority
     attributes:
-      label: Feature Description
-      description: A clear description of the feature you'd like
+      label: Priority
+      options:
+        - priority: critical
+        - priority: high
+        - priority: medium
+        - priority: low
     validations:
       required: true
-
   - type: textarea
-    id: use-case
+    id: acceptance
     attributes:
-      label: Use Case
-      description: Why would this feature be useful?
+      label: Acceptance Criteria
+      description: Use checkboxes for observable behavior.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
     validations:
       required: true
-
   - type: textarea
     id: alternatives
     attributes:
       label: Alternatives Considered
-      description: Any alternative solutions you've considered
-
-  - type: checkboxes
-    id: contribution
+  - type: textarea
+    id: context
     attributes:
-      label: Contribution
+      label: Additional Context
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
       options:
-        - label: I would be willing to submit a PR for this feature
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I described the user or maintainer problem, not only a proposed implementation.
+          required: true
