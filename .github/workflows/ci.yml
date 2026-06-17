@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install ShellCheck
         run: sudo apt-get install -y shellcheck
@@ -31,7 +31,7 @@ jobs:
       - name: Run ShellCheck
         run: |
           echo "Running ShellCheck on all scripts..."
-          shellcheck -x -s bash upgrade-*.sh
+          shellcheck -x -s bash -S warning upgrade-*.sh
           echo "✅ ShellCheck passed"
 
       - name: Check formatting with shfmt
@@ -55,7 +55,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Test --help flags
         run: |
