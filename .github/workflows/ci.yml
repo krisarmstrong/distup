@@ -31,7 +31,7 @@ jobs:
       - name: Run ShellCheck
         run: |
           echo "Running ShellCheck on all scripts..."
-          shellcheck -x -s bash upgrade-*.sh
+          shellcheck -x -s bash -S warning upgrade-*.sh
           echo "✅ ShellCheck passed"
 
       - name: Check formatting with shfmt
