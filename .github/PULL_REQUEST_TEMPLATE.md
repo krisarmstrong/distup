@@ -1,44 +1,39 @@
-## Description
+## Summary
 
-Brief description of what this PR does.
+<!-- What changed and why? Keep this short and concrete. -->
+
+## Linked Issue
+
+<!-- Use Fixes #123, Closes #123, or Related to #123. Every PR should point at tracked work unless it is emergency maintenance. -->
+
+Fixes #
 
 ## Type of Change
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to change)
-- [ ] Documentation update
+- [ ] Defect fix
+- [ ] Feature
+- [ ] Chore / refactor / dependency update
+- [ ] Documentation
+- [ ] CI / release / packaging
+- [ ] Security hardening
 
-## Related Issue
+## Risk
 
-Fixes #(issue number)
+- [ ] Low
+- [ ] Medium
+- [ ] High
 
-## Changes Made
+## Testing Evidence
 
-- Change 1
-- Change 2
+<!-- Paste the exact commands you ran and the meaningful result. "Not run" requires a reason. -->
 
-## Testing
+```text
 
-- [ ] Tested with `--dry-run` mode
-- [ ] Tested on target distribution(s)
-- [ ] Ran `make all` (linting passed)
+```
 
-## Distribution(s) Tested
+## Security and Release Checklist
 
-- [ ] Ubuntu
-- [ ] Debian
-- [ ] Fedora
-- [ ] Alpine
-- [ ] Arch
-- [ ] openSUSE
-- [ ] Kali
-- [ ] Rocky/Alma Linux
-
-## Checklist
-
-- [ ] My code follows the project's style guidelines
-- [ ] I have performed a self-review of my code
-- [ ] I have commented my code where necessary
-- [ ] I have updated documentation if needed
-- [ ] My changes generate no new ShellCheck warnings
+- [ ] No secrets, tokens, credentials, or customer data are included.
+- [ ] Mutating routes, auth surfaces, permission checks, and output encoding were reviewed if touched.
+- [ ] Dependencies are pinned and justified if changed.
+- [ ] Documentation, screenshots, or operator notes were updated if behavior changed.
