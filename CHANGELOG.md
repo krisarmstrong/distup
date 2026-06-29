@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1](https://github.com/krisarmstrong/distup/compare/v1.2.0...v1.2.1) (2026-06-29)
+
+
+### Miscellaneous
+
+* add platinum Bash linting standards ([23582c4](https://github.com/krisarmstrong/distup/commit/23582c4a56000963780a654c74977fd8a5f44b60))
+* **ci:** refresh GitHub Actions pins ([#9](https://github.com/krisarmstrong/distup/issues/9)) ([37199cd](https://github.com/krisarmstrong/distup/commit/37199cdbdde14bfef086971e3bd1519d48aaf410))
+* **github:** standardize repo governance ([#6](https://github.com/krisarmstrong/distup/issues/6)) ([5c34f8f](https://github.com/krisarmstrong/distup/commit/5c34f8f33a9d24fb41414f8a611c94dd69b72d65))
+* standardize repo governance tooling ([#15](https://github.com/krisarmstrong/distup/issues/15)) ([b34e598](https://github.com/krisarmstrong/distup/commit/b34e59809bfa59ef84ebd69edcf5d15eddf924c9))
+
 ## [Unreleased]
 
 ### Planned
