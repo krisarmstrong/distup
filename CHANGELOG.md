@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1](https://github.com/krisarmstrong/distup/compare/v1.2.0...v1.2.1) (2026-10-27)
+
+
+### Continuous Integration
+
+* exempt bot PRs from the PR body lint ([#21](https://github.com/krisarmstrong/distup/issues/21)) ([4613eb6](https://github.com/krisarmstrong/distup/commit/4613eb6dcad72b686ed695cc385a1579c0256505))
+
+
+### Miscellaneous
+
+* add platinum Bash linting standards ([23582c4](https://github.com/krisarmstrong/distup/commit/23582c4a56000963780a654c74977fd8a5f44b60))
+* **ci:** refresh GitHub Actions pins ([#9](https://github.com/krisarmstrong/distup/issues/9)) ([37199cd](https://github.com/krisarmstrong/distup/commit/37199cdbdde14bfef086971e3bd1519d48aaf410))
+* **deps:** bump actions/checkout from 6.0.3 to 7.0.1 ([#18](https://github.com/krisarmstrong/distup/issues/18)) ([a7b9026](https://github.com/krisarmstrong/distup/commit/a7b9026da73767c5d3c40de76079594eedf8a8a8))
+* **deps:** bump crazy-max/ghaction-github-labeler from 5.3.0 to 6.0.0 ([#14](https://github.com/krisarmstrong/distup/issues/14)) ([9729ab8](https://github.com/krisarmstrong/distup/commit/9729ab8d1b86ca6dd2f04cce831cb6543f241fd1))
+* **deps:** bump softprops/action-gh-release from 3.0.0 to 3.0.3 ([#19](https://github.com/krisarmstrong/distup/issues/19)) ([3e76b7b](https://github.com/krisarmstrong/distup/commit/3e76b7b85e2a96fe81dbb1d1c46b9ad572a8417a))
+* **github:** standardize repo governance ([#6](https://github.com/krisarmstrong/distup/issues/6)) ([5c34f8f](https://github.com/krisarmstrong/distup/commit/5c34f8f33a9d24fb41414f8a611c94dd69b72d65))
+* standardize repo governance tooling ([#15](https://github.com/krisarmstrong/distup/issues/15)) ([b34e598](https://github.com/krisarmstrong/distup/commit/b34e59809bfa59ef84ebd69edcf5d15eddf924c9))
+
 ## [Unreleased]
 
 ### Planned
